@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/><meta content="width=device-width,initial-scale=1" name="viewport"/>
+<meta content="#0b1020" name="theme-color"/><title>ATLAS CNC · Painel v4.2</title>
+<link href="/painel.css?v=42organizado1" rel="stylesheet"/>
+<script defer="" src="/modelo3d.js?v=42"></script>
+<script defer="" src="/planejador.js"></script>
+<script defer="" src="/painel.js?v=42organizado1"></script>
+</head>
+<body data-ui-mode="simple">
+<div class="app-shell">
+<aside class="sidebar" id="sidebar">
+<div class="brand"><div class="brand-mark">A<span>•</span></div><div><b>ATLAS <em>CNC</em></b><small>MAQUETE · WORKSTATION</small></div></div>
+<div class="nav-caption">PAINEL</div>
+<div aria-label="Nível de interface" class="mode-picker" role="group"><p>EXIBIÇÃO DO PAINEL</p><div class="mode-picker-buttons"><button aria-pressed="true" class="active" data-ui-switch="simple" type="button">Simples</button><button aria-pressed="false" data-ui-switch="advanced" type="button">Avançado</button></div><span id="modeDescription">Operação diária, sem ajustes técnicos à vista.</span></div><nav id="nav">
+<button class="nav-link active" data-view="dashboard"><span class="nav-ico">◫</span> Início </button>
+<button class="nav-link" data-view="movement"><span class="nav-ico">✥</span> Controle </button>
+<button class="nav-link" data-view="route"><span class="nav-ico">⌁</span> Mapeamento <span class="nav-count" id="navRouteCount">0</span></button>
+<button class="nav-link" data-view="camera"><span class="nav-ico">▣</span> Resultados </button>
+<button class="nav-link advanced-only" data-view="diagnostics"><span class="nav-ico">≡</span> Diagnóstico </button>
+</nav>
+<div class="sidebar-bottom">
+<div class="side-help"><div class="side-help-title">SISTEMA DE CONTROLE</div><p>Notebook <b>⇄ Wi-Fi</b> ESP32-CAM <b>⇄ UART</b> Arduino Uno</p><p class="tiny">A sincronização das fotografias acontece entre as placas.</p></div>
+<span class="build">v4.2 · Painel reorganizado · Flash + PHOTOACK preservados</span>
+</div>
+</aside>
+<div class="main-col">
+<header class="topbar">
+<div class="top-left"><button aria-label="Abrir menu" class="icon-btn menu-btn" id="menuToggle">☰</button><div class="crumb">CONTROLADOR <span>/</span> <strong id="pageTitle">Início</strong></div></div>
+<div class="top-right"><span class="mini-pill" id="topWifi"><i class="dot"></i> ESP32 offline</span><span class="mini-pill" id="topArduino"><i class="dot"></i> Arduino —</span><span class="clock" id="clock">--:--:--</span><button class="icon-btn" id="refreshBtn" title="Atualizar dados">↻</button></div>
+</header>
+<main>
+<div class="notice notice-error" hidden="" id="offlineNotice"><strong>Sem conexão com a ESP32-CAM.</strong> Verifique o IP informado no comando <code>python controle.py --esp ...</code>, Wi-Fi e porta 80. <span id="offlineDetail"></span></div>
+<div class="notice notice-warn" hidden="" id="lockNotice"><strong>Fotografia pendente.</strong> O Arduino bloqueia o movimento até a confirmação da foto. Verifique a aba Câmera.</div>
+<section class="view active" id="view-dashboard">
+<div class="page-heading"><div><div class="eyebrow">PAINEL DE OPERAÇÃO</div><h1>Início</h1><p>Acompanhe a máquina e siga o fluxo: preparar, mapear, executar e conferir as fotos.</p></div><div class="heading-actions"><button class="btn secondary advanced-only" data-view-jump="diagnostics">◷ Diagnóstico</button><button class="btn danger" data-action="stop">■ PARAR</button></div></div>
+<section aria-label="Etapas da operação" class="workflow-card simple-only">
+<div class="workflow-intro"><strong>Seu fluxo de trabalho</strong><span>4 etapas para fotografar a plantação</span></div>
+<div class="workflow-steps">
+<button data-view-jump="movement" type="button"><b>01</b><span><strong>Preparar</strong><small>HOME, X/Y e vídeo</small></span><i>→</i></button>
+<button data-view-jump="route" type="button"><b>02</b><span><strong>Mapear</strong><small>Marcar pontos ou gerar</small></span><i>→</i></button>
+<button data-view-jump="route" type="button"><b>03</b><span><strong>Executar</strong><small>Salvar e iniciar percurso</small></span><i>→</i></button>
+<button data-view-jump="camera" type="button"><b>04</b><span><strong>Resultados</strong><small>Fotos e mosaico</small></span><i>→</i></button>
+</div>
+</section><div class="stats-grid">
+<article class="stat-card"><div class="stat-top"><span>POSIÇÃO DO EIXO X</span><b class="axis-letter x">X</b></div><div class="stat-value"><strong id="dashX">—</strong><small>passos</small></div><div class="stat-foot"><span id="dashXmm">— mm</span><span class="ref-badge" id="dashHX">SEM HOME</span></div></article>
+<article class="stat-card"><div class="stat-top"><span>POSIÇÃO DO EIXO Y</span><b class="axis-letter y">Y</b></div><div class="stat-value"><strong id="dashY">—</strong><small>passos</small></div><div class="stat-foot"><span id="dashYmm">— mm</span><span class="ref-badge" id="dashHY">SEM HOME</span></div></article>
+<article class="stat-card"><div class="stat-top"><span>ESTADO DA MÁQUINA</span><span class="signal" id="stageIcon">◌</span></div><div class="stat-value compact"><strong id="dashStage">OFFLINE</strong></div><div class="stat-foot"><span id="dashDrivers">Drivers: —</span><span class="ref-badge" id="dashLock">Foto: —</span></div></article>
+<article class="stat-card"><div class="stat-top"><span>EXECUÇÃO DO PERCURSO</span><span class="signal">◈</span></div><div class="stat-value compact"><strong><span id="dashPoint">0</span><span class="dim"> / <span id="dashTotal">0</span></span></strong></div><div class="progress"><span id="progressBar"></span></div><div class="stat-foot"><span id="dashProgress">Aguardando roteiro</span><span id="dashLastPhoto">Foto —</span></div></article>
+</div>
+<div class="overview-grid">
+<article class="card viz-card"><div class="card-heading"><div><span class="card-kicker">MONITORAMENTO ESPACIAL</span><h2>Posição e trajetória</h2></div><div aria-label="Modo de visualização" class="segmented" role="group"><button aria-pressed="true" class="selected" data-map="2d" type="button">2D</button><button aria-pressed="false" data-map="iso" type="button">Isométrica</button><button aria-pressed="false" data-map="3d" type="button">3D interativo</button></div></div>
+<div class="viz-viewport">
+<canvas aria-label="Mapa X Y e pontos cadastrados" id="mapCanvas"></canvas>
+<canvas aria-label="Modelo tridimensional baseado no projeto OpenSCAD da maquete com posição X Y e percurso" hidden="" id="model3dCanvas"></canvas>
+<div class="orbit-controls" hidden="" id="orbitControls"><button data-3d="zoom-in" title="Ampliar visualização 3D" type="button">+</button><button data-3d="zoom-out" title="Reduzir visualização 3D" type="button">−</button><button data-3d="reset" title="Restaurar ângulo da câmera" type="button">↺</button><span>Arraste para girar · Roda para zoom</span></div>
+<div class="map-meta"><span>● <b>X</b> transversal</span><span>● <b>Y</b> longitudinal</span><span class="map-coords" id="mapCoords">X — · Y —</span></div></div>
+<div class="max-viz-toolbar advanced-only"><button class="btn secondary" data-action="preview-max" id="previewMaxBtn" type="button">◎ Visualizar MAX X/Y no fundo do 3D</button><button class="btn secondary" data-action="preview-real" hidden="" id="previewRealBtn" type="button">↺ Voltar à posição real</button><span aria-live="polite" class="max-preview-label" id="maxPreviewLabel" role="status">Visualização baseada no Arduino</span></div>
+<div class="viz-legend"><span><i class="legend-item current"></i> Posição atual</span><span><i class="legend-item photo"></i> Parada com foto</span><span><i class="legend-item transit"></i> Ponto sem foto</span><span><i class="legend-line"></i> Roteiro</span></div>
+</article>
+<div class="side-stack">
+<article class="card control-card advanced-only"><div class="card-heading"><div><span class="card-kicker">ACESSO À OPERAÇÃO</span><h2>Comandos reunidos</h2></div><span class="tag">Sem duplicações</span></div>
+<p class="hint">HOME, drivers, centro e setas X/Y ficam concentrados na aba Controle. O painel Início mostra apenas a posição, a trajetória e o estado da máquina.</p>
+<button class="btn primary full" data-view-jump="movement">✥ Abrir controle manual</button>
+</article>
+<article class="card activity-card advanced-only"><div class="card-heading"><div><span class="card-kicker">ÚLTIMA ATIVIDADE</span><h2>Evento atual</h2></div></div><p class="event-text" id="currentEvent">Aguardando telemetria da ESP32-CAM...</p><div class="event-error" hidden="" id="currentError"></div><div class="activity-actions"><button class="btn secondary" data-view-jump="route">Abrir percurso ↗</button><button class="btn primary" data-view-jump="camera">Câmera ↗</button></div></article>
+</div>
+</div>
+</section>
+<section class="view" id="view-movement">
+<div class="page-heading"><div><div class="eyebrow">PREPARAÇÃO E ENQUADRAMENTO</div><h1>Controle</h1><p>Referencie a máquina, ajuste X/Y e confira a câmera ao vivo.</p></div><button class="btn danger" data-action="stop">■ PARAR</button></div>
+<article class="card reference-card" aria-label="HOME sem sensores, referência MAX e centro mecânico">
+<div class="card-heading"><div><span class="card-kicker">01 · REFERÊNCIA FÍSICA</span><h2>Preparar a máquina</h2></div><span class="tag">Sem fim de curso</span></div>
+<p class="hint warning">A maquete <strong>não detecta a posição física ao ligar</strong> nem os seus limites. Faça o alinhamento com os motores desligados e a máquina parada. Registrar HOME ou MAX não movimenta os eixos.</p>
+<div class="reference-grid">
+<section class="reference-method" aria-label="Referenciar pela origem mínima"><div class="reference-method-title"><span class="reference-number">A</span><div><h3>Pelo canto X0 / Y0</h3><p>Alinhe fisicamente os dois eixos na origem mínima, sem forçar batentes. Depois ligue a máquina.</p></div></div>
+<div class="two-btn"><button class="btn secondary" data-action="define-zero">1 · Definir X0/Y0</button><button class="btn secondary" data-action="home">2 · Confirmar HOME</button></div></section>
+<section class="reference-method" aria-label="Referenciar pelo máximo físico"><div class="reference-method-title"><span class="reference-number">B</span><div><h3>Pelo canto MAX (fundo)</h3><p>Alternativa: alinhe X máximo / Y máximo fisicamente. A prévia 3D NÃO movimenta os eixos.</p></div></div>
+<div class="max-calibration-actions"><button class="btn secondary" data-action="preview-max">◈ Mostrar MAX no 3D</button><button class="btn secondary" data-action="preview-real">↺ Posição real</button></div>
+<p aria-live="polite" class="max-calibration-values" id="maxPhysicalCoords">MAX programado: aguardando Arduino</p>
+<button class="btn secondary full" id="confirmPhysicalMax" data-action="confirm-physical-max">⌖ Confirmar MAX físico + HOME (sem mover)</button></section>
+</div>
+<div class="reference-operate"><div><strong>02 · Ativar motores e centralizar</strong><p>Após confirmar uma das referências, confira o curso livre antes de mover.</p></div>
+<div class="reference-operate-buttons"><button class="btn secondary" data-action="enable">Ativar drivers</button><button class="btn primary" data-action="auto-center">◎ Ir ao centro mecânico</button></div></div>
+<div aria-live="polite" class="home-status" id="homeCenterStatus">Aguardando comunicação com o Arduino.</div>
+<p class="hint" id="centerLimitsInfo">Centro mecânico: aguardando limites informados pelo Arduino. Não confundir com o centro das plantas.</p>
+</article>
+<article class="card field-geometry-card" id="geomCard" aria-label="Medidas reais e centro do canteiro">
+<div class="card-heading"><div><span class="card-kicker">DIMENSÕES DAS FOTOS DA MAQUETE · V4.2</span><h2>Centro real das plantas</h2></div><span class="tag">Calibração no notebook</span></div>
+<p class="hint">Medidas identificadas na montagem: <strong>canteiro 30 × 83 cm</strong>; travessa transversal ~39–40 cm; guia longitudinal ~1 m; carrinho ~8 cm. O centro geométrico do canteiro fica a <strong>15 cm e 41,5 cm de suas bordas</strong>. Essas medidas <strong>não</strong> revelam quantos passos do Arduino levam a lente até lá.</p>
+<div class="geom-specs"><span><small>CANTEIRO X</small><strong>300 mm</strong></span><span><small>CANTEIRO Y</small><strong>830 mm</strong></span><span><small>CENTRO DA ÁREA</small><strong>150 × 415 mm</strong></span></div>
+<div class="geom-procedure"><strong>Ensinar o centro da câmera — uma vez após calibrar o HOME</strong>
+<p>Use X/Y e o vídeo para deixar <strong>a lente</strong> sobre o centro do canteiro. Não empurre o carrinho à mão depois do HOME. Clique em <b>Guardar centro atual</b> para salvar os passos X/Y no notebook.</p></div>
+<p aria-live="polite" class="home-status" id="geomCenterStatus">Centro físico ainda não ensinado.</p>
+<div class="two-btn"><button class="btn success" data-action="geom-mark-center" id="geomMarkCenter" type="button">⌖ Guardar centro atual (sem mover)</button><button class="btn primary" data-action="geom-go-center" id="geomGoCenter" type="button" disabled>◎ Ir ao centro do canteiro</button></div>
+<label class="geom-check"><input id="geomReferenceCheck" type="checkbox"/> Confirmei o mesmo HOME físico usado ao ensinar o centro nesta sessão.</label>
+<p class="hint warning">Esse centro é uma coordenada ensinada, não um sensor. Se refizer o HOME com outra referência ou alterar a transmissão/calibração, ensine novamente. Não substitui os limites do firmware; confira o percurso livre antes de mover.</p>
+</article>
+<div class="control-position"><span><small>POSIÇÃO X</small><strong id="controlStatusX">—</strong></span><span><small>POSIÇÃO Y</small><strong id="controlStatusY">—</strong></span><span><small>ESTADO</small><strong id="controlStatusStage">—</strong></span></div><div class="control-workspace"><article class="card live-camera-card">
+<div class="card-heading"><div><span class="card-kicker">CALIBRAÇÃO DO ENQUADRAMENTO · MJPEG</span><h2>ESP32-CAM ao vivo</h2></div><span aria-live="polite" class="tag" id="liveStatus" role="status">Desligado</span></div>
+<div class="live-camera-toolbar">
+<button class="btn success" data-action="live-start" id="liveStart" type="button">▶ Iniciar câmera ao vivo</button>
+<button class="btn secondary" data-action="live-stop" disabled="" id="liveStop" type="button">■ Parar transmissão</button>
+<label class="live-grid-toggle"><input id="liveGrid" type="checkbox"/> Mostrar grade de enquadramento</label>
+</div>
+<div class="live-camera-preview" id="livePreview">
+<div class="live-placeholder" id="livePlaceholder"><span class="live-placeholder-icon">▣</span><strong>Transmissão desligada</strong><span>Inicie o vídeo para ajustar a posição da câmera e conferir a cobertura das plantas.</span></div>
+<div class="live-video-stage" hidden="" id="liveStage">
+<img alt="Transmissão ao vivo da ESP32-CAM para calibrar o enquadramento" hidden="" id="liveImage"/>
+<div aria-hidden="true" class="live-grid-overlay" hidden="" id="liveGridOverlay"></div>
+</div>
+</div>
+<p class="hint">A câmera transmite vídeo apenas quando você inicia. O painel utiliza a porta 81 da ESP32 via notebook (porta 8765). O vídeo é pausado durante fotografias e execução automática para preservar a confirmação de cada JPEG. A grade é só visual e não é gravada nas fotos.</p>
+</article><article class="card flash-card" aria-label="Iluminacao da ESP32-CAM">
+<div class="card-heading"><div><span class="card-kicker">LUZ DA ESP32-CAM</span><h2>Flash LED</h2></div><span class="tag" data-flash-status>Verificando…</span></div>
+<label class="flash-toggle"><input type="checkbox" data-flash-auto/> <span><strong>Flash automático para fotos escuras</strong><small>Opcional. Avalia a imagem antes de cada foto e ilumina apenas se parecer escura.</small></span></label>
+<div class="flash-actions"><button class="btn secondary" type="button" data-action="flash-on">☼ Ligar flash</button><button class="btn secondary" type="button" data-action="flash-off">◌ Desligar flash</button></div>
+<p class="hint" data-flash-feedback>O flash manual desliga sozinho após 60 segundos. No modo automático, a luz é usada apenas nas fotografias; o vídeo não aciona o flash sozinho.</p>
+</article><article class="card"><div class="card-heading"><div><span class="card-kicker">02 · MOVIMENTO MANUAL</span><h2>Movimentar X / Y</h2></div><span class="tag">Até 5000 passos, respeitando o curso</span></div>
+<div class="presets"><button data-step="1">1 passo</button><button class="selected" data-step="5">5 passos</button><button data-step="10">10 passos</button><button data-step="50">50 passos</button><button data-step="100">100 passos</button><button data-step="250">250 passos</button><button data-step="500">500 passos</button><button data-step="1000">1000 passos</button><button data-step="2500">2500 passos</button><button data-step="5000">5000 passos</button></div>
+<label class="hold-jog-toggle"><input id="holdJogMode" type="checkbox"/> <strong>Movimento contínuo — segurar X/Y</strong></label>
+<p id="holdJogStatus" class="hint" aria-live="polite">Desativado: um clique move a quantidade escolhida. Ative para mover apenas enquanto segurar.</p>
+<label class="field">Passos por comando<div class="input-unit"><input id="moveDelta" max="5000" min="1" type="number" value="5"/><span>passos</span></div></label>
+<div class="jogpad big"><button class="up" data-jog="Y:1">Y + <span>↑</span></button><button class="left" data-jog="X:-1"><span>←</span> X −</button><div class="jog-center">XY</div><button class="right" data-jog="X:1">X + <span>→</span></button><button class="down" data-jog="Y:-1">Y − <span>↓</span></button></div>
+<p class="hint">Modo por passos: clique uma vez e aguarde a chegada. Modo contínuo: mantenha o botão pressionado; soltar solicita STOP à ESP32-CAM. Sem sinal, o Arduino para sozinho. Os limites são lógicos e exigem HOME físico correto.</p>
+</article></div><article aria-label="Ensinar pontos olhando o vídeo ao vivo" class="card teach-camera-card">
+<div class="card-heading"><div><span class="card-kicker">03 · REGISTRAR ENQUADRAMENTO</span><h2>Marcar a posição atual</h2></div><span class="tag">Usa as setas do controle</span></div>
+<div class="teach-camera-content">
+<div class="teach-instruction"><strong>Use as setas X/Y acima</strong><p>Depois de enquadrar e aguardar a máquina parar, salve a posição atual. As opções de passos e o modo contínuo ficam no controle manual logo acima.</p></div>
+<div class="teach-mark"><div aria-live="polite" class="teach-position" id="cameraTeachPosition">Posição: aguardando telemetria</div><label class="teach-checkbox"><input checked="" id="cameraTeachPhoto" type="checkbox"/> Fotografar neste ponto</label><button class="btn success full teach-big-button" data-action="add-current" data-photo-input="cameraTeachPhoto" id="cameraTeachMark">◎ Marcar este enquadramento</button><p class="hint">Adiciona as coordenadas atuais ao roteiro. A foto será tirada durante a execução automática, não neste clique.</p><button class="btn secondary full" data-view-jump="route">⌁ Ver pontos ensinados no percurso</button></div>
+</div>
+</article><div class="section-grid two">
+<article class="card advanced-only"><div class="card-heading"><div><span class="card-kicker">AJUSTES AVANÇADOS</span><h2>Velocidade e posição lógica</h2></div></div>
+<label class="field">Velocidade (passos por segundo)<div class="input-unit"><input id="speedPps" max="2000" min="10" type="number" value="60"/><span>passos/s</span></div></label>
+<div class="presets"><button data-speed="30">Lenta · 30</button><button class="selected" data-speed="60">60</button><button data-speed="150">150</button><button data-speed="300">300</button></div>
+<button class="btn primary full" data-action="set-speed">Aplicar velocidade</button><p class="hint" id="speedHint">60 passos/s ≈ 2.00 mm/s em X/Y (estimativa conforme firmware).</p>
+<div class="divider"></div>
+<div class="card-heading tight"><div><h3>Referência dos eixos</h3></div></div>
+<div class="two-btn"><button class="btn secondary" data-action="home-x">⌖ HOME X</button><button class="btn secondary" data-action="home-y">⌖ HOME Y</button></div>
+<div class="two-btn"><button class="btn secondary" data-action="unhome">Invalidar HOME</button><button class="btn secondary" data-action="disable">Liberar drivers</button></div>
+<div class="divider"></div>
+<h3>Definir posição lógica <span class="smaller">(sem mover)</span></h3>
+<div class="two-fields"><label class="field">X em passos<input id="setX" min="0" type="number" value="0"/></label><label class="field">Y em passos<input id="setY" min="0" type="number" value="0"/></label></div>
+<button class="btn secondary full" data-action="setpos">Atualizar posição lógica</button>
+<button class="btn secondary full" data-action="goto-origin">Ir fisicamente a X0/Y0</button>
+<p class="hint warning">HOME, “Definir X0/Y0” e “Confirmar MAX físico” não movimentam. “Ir ao centro mecânico” e “Ir fisicamente a X0/Y0” movimentam os motores. Sem sensores, não existe detecção automática de origem.</p>
+</article>
+</div>
+</section>
+<section class="view" id="view-route">
+<div class="page-heading"><div><div class="eyebrow">ENSINO E VARREDURA</div><h1>Mapeamento</h1><p>Marque as posições com X/Y ou gere um percurso com prévia antes de executar.</p></div><button class="btn danger" data-action="stop">■ PARAR</button></div>
+<article aria-label="Ensinar trajeto sem digitar coordenadas" class="card teach-card">
+<div class="card-heading"><div><span class="card-kicker">MODO ENSINAR · X/Y + MARCAR</span><h2>Movimente a câmera e marque cada fotografia</h2></div><span class="tag" id="teachReady">Aguardando Arduino</span></div>
+<div class="teach-columns">
+<div>
+<p class="hint teach-intro">Escolha o tamanho do movimento, use X/Y para enquadrar as plantas e espere a parada. O ponto será gravado com as <strong>coordenadas atuais reportadas pelo Arduino (contagem de passos)</strong>.</p>
+<div class="teach-presets"><label for="teachDelta">Deslocar por clique</label><input id="teachDelta" max="5000" min="1" type="number" value="5"/><span>passos</span></div>
+<div class="jogpad teach-jog"><button class="up" data-jog="Y:1">Y + ↑</button><button class="left" data-jog="X:-1">← X −</button><div class="jog-center">X / Y</div><button class="right" data-jog="X:1">X + →</button><button class="down" data-jog="Y:-1">Y − ↓</button></div>
+<div aria-live="polite" class="teach-position" id="teachPosition">Posição: aguardando telemetria</div>
+</div>
+<div class="teach-mark">
+<span class="card-kicker">REGISTRAR PARADA</span>
+<div class="teach-big-number">Próximo ponto <strong id="teachNextPoint">01</strong></div>
+<label class="teach-checkbox"><input checked="" id="teachPhoto" type="checkbox"/> Tirar fotografia neste ponto</label>
+<button class="btn success full teach-big-button" data-action="add-current" data-photo-input="teachPhoto" id="teachMark">◎ Marcar posição atual</button>
+<p class="hint">Não precisa digitar X ou Y. A cada clique, um ponto é adicionado na sequência. As fotos terão sobreposição se você deslocar menos que a área enquadrada.</p>
+<button class="btn secondary full" data-view-jump="movement">▣ Abrir câmera ao vivo no Controle ↗</button>
+<p class="hint warning">Sem sensores, confirme HOME antes de ensinar. Não empurre os eixos fisicamente com a mão após referenciar; isso perde a contagem de passos.</p>
+</div>
+</div>
+</article>
+<article aria-label="Gerador de roteiros para fotografia" class="card planner-card planner-compact" id="autoPlanner"><button aria-controls="plannerDetails" aria-expanded="false" class="planner-expand" id="plannerExpand" type="button"><span><strong>Varredura automática (opcional)</strong><small>Zigue-zague, linhas, colunas, espiral e perímetro • com prévia virtual</small></span><span aria-hidden="true" class="planner-chevron">▾</span></button><div class="planner-details" hidden="" id="plannerDetails">
+<div class="card-heading"><div><span class="card-kicker">VARREDURA GERADA · SEM MOVER MOTORES</span><h2>Gerar pontos de fotografia pela área</h2></div><span class="tag">Até 48 pontos</span></div>
+<p class="hint">Além do percurso ensinado, escolha um método automático. As coordenadas são os <strong>centros da câmera em passos</strong>; a cobertura X/Y deve ser medida com a câmera instalada. A prévia nunca envia comandos aos motores.</p>
+<div class="planner-form">
+<label>Método<select id="plannerMode"><option value="snakeRows">Zigue-zague por linhas (recomendado)</option><option value="snakeCols">Zigue-zague por colunas</option><option value="rows">Linhas em sentido único</option><option value="cols">Colunas em sentido único</option><option value="spiral">Espiral retangular</option><option value="perimeter">Perímetro — somente bordas</option></select></label>
+<label>Início X<input id="plannerX0" min="0" step="1" type="number" value="0"/></label>
+<label>Fim X<input id="plannerX1" min="0" step="1" type="number" value="1640"/></label>
+<label>Início Y<input id="plannerY0" min="0" step="1" type="number" value="0"/></label>
+<label>Fim Y<input id="plannerY1" min="0" step="1" type="number" value="4550"/></label>
+<label>Cobertura câmera em X (passos)<input id="plannerFootX" min="1" step="1" type="number" value="600"/></label>
+<label>Cobertura câmera em Y (passos)<input id="plannerFootY" min="1" step="1" type="number" value="1500"/></label>
+<label>Sobreposição (%)<input id="plannerOverlap" max="70" min="0" step="5" type="number" value="25"/></label>
+</div>
+<div class="planner-options"><label><input id="plannerFlipX" type="checkbox"/> Começar pelo lado X máximo</label><label><input id="plannerFlipY" type="checkbox"/> Começar pelo lado Y máximo</label></div>
+<div class="planner-buttons"><button class="btn secondary" data-action="planner-preview">◎ Pré-visualizar pontos</button><button class="btn success" data-action="planner-apply" disabled="" id="plannerApply">＋ Usar roteiro gerado</button><button class="btn secondary" data-view-jump="movement">▣ Abrir câmera ao vivo no Controle ↗</button></div>
+<div aria-live="polite" class="planner-feedback" id="plannerFeedback" role="status">Preencha os limites reais e a cobertura da câmera. Valores pré-preenchidos de cobertura são apenas exemplos e não foram calibrados.</div>
+<canvas aria-label="Pré-visualização do roteiro gerado sem movimento físico" height="260" id="plannerCanvas"></canvas>
+<p class="hint warning">⚠ Gerar um roteiro não movimenta a CNC. Confira HOME, orientação dos eixos, limites mecânicos, cobertura real da câmera e pontos antes de clicar em <strong>Salvar na ESP32-CAM</strong> e iniciar o percurso. O método Perímetro não cobre o interior.</p>
+</div></article>
+<div class="section-grid route-layout">
+<article class="card"><div class="card-heading"><div><span class="card-kicker">PONTOS DE PARADA</span><h2>Lista programada <span class="tag" hidden="" id="routeDirty">Alterações não salvas</span></h2></div><span class="tag" id="routeBadge">0 / 48 pontos</span></div>
+<details class="teach-advanced"><summary>Inserir coordenadas manualmente (opcional)</summary><div class="route-create"><div class="field-inline"><label>X<input id="pointX" min="0" type="number" value="0"/></label><label>Y<input id="pointY" min="0" type="number" value="0"/></label><label class="checkbox-inline"><input checked="" id="pointPhoto" type="checkbox"/> Foto</label><button class="btn secondary" data-action="add-point">＋ Adicionar coordenada</button></div></div></details>
+<div class="table-wrap"><table><thead><tr><th>#</th><th>X (passos)</th><th>Y (passos)</th><th>Fotografar</th><th>Ordem</th><th></th></tr></thead><tbody id="routeRows"></tbody></table><div class="empty-state" id="emptyRoute">Nenhum ponto cadastrado. Posicione a câmera pelos botões X/Y e clique em “Marcar posição atual”.</div></div>
+<div class="route-buttons"><button class="btn primary" data-action="save-route">☑ Salvar na ESP32-CAM</button><button class="btn secondary" data-action="load-route">↻ Recarregar da ESP32</button><button class="btn secondary" data-action="export-route">↓ Exportar CSV</button><button class="btn secondary" data-action="import-route">↑ Importar CSV</button><input accept=".csv,.txt,text/csv,text/plain" hidden="" id="routeFile" type="file"/></div>
+</article>
+<div class="side-stack"><article class="card"><div class="card-heading"><div><span class="card-kicker">EXECUÇÃO AUTÔNOMA</span><h2>Controle do roteiro</h2></div></div><div class="big-count"><span id="routeProgress">0 / 0</span> pontos percorridos</div><div class="progress"><span id="routeProgressBar"></span></div><div class="route-actions"><button class="btn success full" data-action="start">▶ Iniciar percurso</button><button class="btn danger full" data-action="stop">■ PARAR</button></div><p class="hint">A ESP32-CAM coordena os movimentos e somente avança depois de receber a confirmação de gravação da foto no notebook.</p></article>
+<article class="card"><div class="card-heading"><div><span class="card-kicker">TRAJETÓRIA</span><h2>Resumo dos pontos</h2></div></div><div class="route-summary"><div><strong id="routePhotos">0</strong><small>paradas com foto</small></div><div><strong id="routeTransit">0</strong><small>sem fotografia</small></div></div><p class="hint">Unidades: passos internos (0 até os limites calculados pelo firmware). O desenho 2D na Visão geral acompanha esta lista.</p></article></div>
+</div>
+</section>
+<section class="view" id="view-camera">
+<div class="page-heading"><div><div class="eyebrow">FOTOGRAFIAS E MOSAICOS</div><h1>Resultados</h1><p>Consulte as capturas e monte a imagem geral da plantação.</p></div><button class="btn primary" data-action="manual-photo">▣ Tirar foto agora</button></div>
+<article class="card flash-card" aria-label="Iluminacao da ESP32-CAM">
+<div class="card-heading"><div><span class="card-kicker">LUZ DA ESP32-CAM</span><h2>Flash LED</h2></div><span class="tag" data-flash-status>Verificando…</span></div>
+<label class="flash-toggle"><input type="checkbox" data-flash-auto/> <span><strong>Flash automático para fotos escuras</strong><small>Opcional. Avalia a imagem antes de cada foto e ilumina apenas se parecer escura.</small></span></label>
+<div class="flash-actions"><button class="btn secondary" type="button" data-action="flash-on">☼ Ligar flash</button><button class="btn secondary" type="button" data-action="flash-off">◌ Desligar flash</button></div>
+<p class="hint" data-flash-feedback>O flash manual desliga sozinho após 60 segundos. No modo automático, a luz é usada apenas nas fotografias; o vídeo não aciona o flash sozinho.</p>
+</article>
+<article aria-label="Mosaico da plantação completa" class="card mosaic-card">
+<div class="card-heading"><div><span class="card-kicker">MOSAICO X/Y + ENCAIXE FINO</span><h2>Imagem geral da plantação</h2></div><span class="tag">JPEGs preservados</span></div><p class="hint simple-only">Ao terminar o roteiro, as fotos originais ficam salvas. Você pode gerar a imagem geral abaixo, sem apagar nenhuma fotografia.</p>
+<p class="hint">Monte uma única imagem com as fotos salvas e as posições X/Y registradas. A montagem é aproximada: primeiro calibre quantos <strong>passos de X/Y uma fotografia cobre</strong>. Não substitui os JPEGs originais nem movimenta a máquina.</p>
+<div class="mosaic-settings advanced-only">
+<label class="field">Cobertura X (passos por foto)<input id="mosaicFootX" max="50000" min="1" step="1" type="number" value="600"/></label>
+<label class="field">Cobertura Y (passos por foto)<input id="mosaicFootY" max="50000" min="1" step="1" type="number" value="1500"/></label>
+<label class="field">Orientação da imagem<select id="mosaicRotate"><option value="0">Normal (0°)</option><option value="90">90° anti-horário</option><option value="180">180°</option><option value="270">90° horário</option></select></label>
+<div class="mosaic-checks"><label><input id="mosaicFlipX" type="checkbox"/> Espelhar foto em X</label><label><input id="mosaicFlipY" type="checkbox"/> Espelhar foto em Y</label><label><input checked="" id="mosaicAutomatic" type="checkbox"/> Gerar automaticamente ao concluir roteiro</label><label><input checked="" id="mosaicFine" type="checkbox"/> Encaixe fino por pontos em comum (recomendado com sobreposição)</label></div>
+</div>
+<div class="mosaic-actions"><button class="btn secondary advanced-only" data-action="mosaic-save">Salvar calibração</button><label class="field advanced-only">Fotografias usadas<select id="mosaicSource"><option value="sessao">Última execução do percurso</option><option value="recentes">Últimas 48 posições com fotos</option></select></label><button class="btn success" data-action="mosaic-generate" id="mosaicGenerate">▣ Gerar mosaico agora</button><button class="btn secondary advanced-only" data-action="mosaic-refresh">↻ Atualizar</button></div>
+<p aria-live="polite" class="hint" id="mosaicFeedback" role="status">Aguardando consulta ao notebook. Os valores de cobertura são exemplos, não estão calibrados.</p>
+<div class="mosaic-preview" id="mosaicPreview"><div class="preview-empty"><strong>Sem mosaico ainda</strong><span>Após executar um roteiro, a imagem montada aparecerá aqui.</span></div></div>
+<div class="mosaic-result" id="mosaicResult"></div>
+<p class="hint warning advanced-only">Para juntar corretamente, mantenha a câmera na mesma altura e orientação e deixe sobreposição entre as fotos. O encaixe fino tenta reduzir pequenas diferenças, mas não garante uma montagem perfeita. Compare desativando a opção se houver plantas repetidas ou pouca sobreposição; os JPEGs originais continuam disponíveis.</p>
+</article><div class="section-grid camera-layout">
+<article class="card"><div class="card-heading"><div><span class="card-kicker">ÚLTIMA IMAGEM RECEBIDA</span><h2>Pré-visualização</h2></div><span class="tag" id="photoCount">0 fotos</span></div><div class="preview" id="photoPreview"><div class="preview-empty">▣<strong>Nenhuma fotografia disponível</strong><span>A imagem mais recente aparecerá aqui após ser salva.</span></div></div><p class="hint">Esta é a última foto salva no notebook, não um vídeo ao vivo. A captura manual requer Arduino conectado, parado e referenciado.</p></article>
+<div class="side-stack advanced-only"><article class="card"><div class="card-heading"><div><span class="card-kicker">TRAVA DE SEGURANÇA</span><h2>Sincronização de foto</h2></div></div><div class="lock-status" id="cameraLock">Estado ainda não recebido</div><p class="hint">Durante o roteiro: Arduino para → ESP32 fotografa → notebook valida/salva → ESP32 envia PHOTOACK → Arduino libera próximo movimento.</p><button class="btn secondary full" data-action="retry">↻ Repetir foto com falha</button><button class="btn outline-danger full" data-action="recover">Descartar foto pendente (manual)</button></article>
+<article class="card"><div class="card-heading"><div><span class="card-kicker">ARMAZENAMENTO</span><h2>Pasta de fotografias</h2></div></div><code class="path">notebook/capturas/</code><p class="hint">JPEGs com ID, posição X/Y e arquivo <code>manifesto.csv</code>. O processamento de visão computacional fica em outro software.</p><button class="btn secondary full" data-action="refresh-gallery">↻ Atualizar galeria</button></article></div>
+</div>
+<article class="card gallery-card"><div class="card-heading"><div><span class="card-kicker">HISTÓRICO</span><h2>Galeria de capturas</h2></div><span class="tag">Até 80 imagens recentes</span></div><div class="gallery" id="photoGallery"></div></article>
+</section>
+<section class="view" id="view-diagnostics">
+<div class="page-heading"><div><div class="eyebrow">FERRAMENTAS TÉCNICAS</div><h1>Diagnóstico</h1><p>Estado detalhado, UART, rede e histórico de comandos.</p></div><button class="btn secondary" data-action="refresh">↻ Atualizar agora</button></div>
+<div class="section-grid two"><article class="card"><div class="card-heading"><div><span class="card-kicker">REDE LOCAL</span><h2>ESP32-CAM e notebook</h2></div></div><div class="info-list"><div><span>Conexão HTTP</span><b id="diagHttp">Aguardando</b></div><div><span>Alvo configurado no Python (--esp)</span><b id="diagTarget">Carregando...</b></div><div><span>IP reportado pela ESP32-CAM</span><b id="diagIp">—</b></div><div><span>Endereço do painel</span><b id="diagPanel">—</b></div><div><span>Última leitura</span><b id="diagTime">—</b></div><div><span>Wi-Fi da ESP32</span><b id="diagWifi">—</b></div></div><button class="btn secondary full" data-action="refresh">Verificar conexão</button></article>
+<article class="card"><div class="card-heading"><div><span class="card-kicker">CONTROLE UART</span><h2>Arduino Uno</h2></div></div><div class="info-list"><div><span>Comunicação Arduino</span><b id="diagArduino">—</b></div><div><span>HOME X/Y</span><b id="diagHome">—</b></div><div><span>Drivers</span><b id="diagEnable">—</b></div><div><span>Motor em movimento</span><b id="diagMotion">—</b></div><div><span>Foto pendente (ID)</span><b id="diagPending">—</b></div><div><span>Coordenadas máximas</span><b id="diagLimits">—</b></div></div><button class="btn secondary full" data-action="status-command">Solicitar STATUS pela UART</button></article></div>
+<article class="card console-card"><div class="card-heading"><div><span class="card-kicker">MONITOR DE EVENTOS</span><h2>Mensagens e comandos</h2></div><div class="heading-actions"><button class="btn secondary small" data-action="copy-log">Copiar</button><button class="btn secondary small" data-action="clear-log">Limpar</button></div></div><div aria-live="polite" class="console" id="logOutput" role="log"></div><p class="hint">“Comando enviado” significa que a ESP32 recebeu o pedido HTTP; não garante que o motor já concluiu o deslocamento. Confirme a telemetria.</p></article>
+</section>
+</main>
+<footer>ATLAS CNC · controle local Wi-Fi <span>HOME é referência lógica, não sensor físico · Use parada elétrica apropriada</span></footer>
+</div>
+</div>
+<div class="toast-wrap" id="toastWrap"></div>
+<div class="modal" hidden="" id="photoModal"><div class="modal-scrim" data-close-photo="1"></div><div class="modal-content"><button class="modal-close" data-close-photo="1">✕ Fechar</button><img alt="Fotografia ampliada" id="modalImage"/><div id="modalCaption"></div></div></div>
+</body></html>
