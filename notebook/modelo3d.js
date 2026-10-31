@@ -179,8 +179,8 @@ window.Atlas3D = (() => {
     // Referencias da orientacao real: fundo da maquina e o MAX do eixo Y.
     // Estas marcas sao APENAS VISUAIS, nao enviam comandos nem recalibram eixos.
     L([-CAD.cursoX/2,maxVisualY,340],[CAD.cursoX/2,maxVisualY,340],'#ffd27c',3);
-    T([0,maxVisualY+52,380],'FUNDO · MAX Y','#ffe1a3');
-    T([0,homeVisualY-52,380],'FRENTE · HOME Y=0','#a9d8ff');
+    T([0,maxVisualY+52,380],'FUNDO · MAX X','#ffe1a3');
+    T([0,homeVisualY-52,380],'FRENTE · HOME X=0','#a9d8ff');
     // Localizador do canto MAX X/Y (fundo, extremidade transversal).
     P([X(maxX),maxVisualY,365],'#ffbf5c',7);
     T([X(maxX),maxVisualY,413],'MAX X/Y','#ffdb93');
@@ -196,10 +196,10 @@ window.Atlas3D = (() => {
     if(hasPos || visualMax){
       P([px,py,35],'#91c5ff',8);
       L([px,py,195],[px,py,36],'#85b9ff',1.5,[3,4]);
-      T([px,py,380],visualMax?`PRÉVIA MAX NO FUNDO · X ${maxX} · Y ${maxY}`:`X ${Math.trunc(s.x)} · Y ${Math.trunc(s.y)}`,visualMax?'#ffd783':'#e5f8ff');
+      T([px,py,380],visualMax?`PRÉVIA MAX NO FUNDO · Y ${maxX} · X ${maxY}`:`Y ${Math.trunc(s.x)} · X ${Math.trunc(s.y)}`,visualMax?'#ffd783':'#e5f8ff');
     }
-    T([210,-550,0],'X +','#82bafe');
-    T([-230,550,0],'Y + (FUNDO)','#80d7c1');
+    T([210,-550,0],'Y +','#82bafe');
+    T([-230,550,0],'X + (FUNDO)','#80d7c1');
     T([-235,-540,355],'Z ↑','#b9c8dc');
     return {solids,overlays,hasPos,pointCount:route.length};
   }

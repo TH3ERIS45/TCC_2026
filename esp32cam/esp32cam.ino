@@ -135,6 +135,7 @@ int32_t ultimaFotoX = 0, ultimaFotoY = 0;
 String linhaSerial, ultimoEvento = "Inicializando", erro = "";
 String telemetria = "";
 int32_t eixoX = -1, eixoY = -1, maxX = 1640, maxY = 4550;
+int32_t centerXSteps = 820, centerYSteps = 2275; // canais internos; painel troca apenas os rotulos
 bool homedX = false, homedY = false, enabled = false, movimentando = false;
 volatile bool fotoLock = false;
 volatile bool executando = false;
@@ -144,8 +145,8 @@ uint32_t telemetriaSeq = 0;  // muda SOMENTE quando chega POS real do Arduino
 // e o PHOTOACK dessa transacao ja foi enviado pela UART.
 bool fotoAckEnviado = false;
 // Versao e diagnosticos visiveis em /api/status para conferir a gravacao real.
-const char* FW_VERSION = "ESP32-4.2-GC2145-UARTACK-FIX1";
-// Mantem o protocolo 2.7: ESP32-2.7-PHOTOACK-DIAG.
+const char* FW_VERSION = "ESP32-4.3-GC2145-PREFLIGHT-CENTER-CAL";
+// Base de captura/ACK mantida de "ESP32-4.2-GC2145-UARTACK-FIX1"; protocolo PHOTOACK 2.7 preservado (ESP32-2.7-PHOTOACK-DIAG).
 uint8_t fotoAckTentativas = 0;
 uint32_t ultimoAckMs = 0;
 String ultimaLinhaArduino = "";
@@ -218,6 +219,8 @@ void tratarLinha(const String &line) {
     eixoY = campo(line, "Y").toInt();
     if (campo(line, "XMAX").length()) maxX = campo(line, "XMAX").toInt();
     if (campo(line, "YMAX").length()) maxY = campo(line, "YMAX").toInt();
+    centerXSteps = campo(line, "CENTERX").length() ? campo(line, "CENTERX").toInt() : maxX / 2;
+    centerYSteps = campo(line, "CENTERY").length() ? campo(line, "CENTERY").toInt() : maxY / 2;
     homedX = campo(line, "HX") == "1";
     homedY = campo(line, "HY") == "1";
     enabled = campo(line, "EN") == "1";
@@ -505,6 +508,7 @@ void jsonStatus() {
         !movimentando && !fotoLock && !executando && stage==IDLE && !pendenteId ? "true" : "false");
   s += ",\"x\":" + String(eixoX) + ",\"y\":" + String(eixoY);
   s += ",\"xmax\":" + String(maxX) + ",\"ymax\":" + String(maxY);
+  s += ",\"center_x\":" + String(centerXSteps) + ",\"center_y\":" + String(centerYSteps);
   s += ",\"home_x\":" + String(homedX?"true":"false") + ",\"home_y\":" + String(homedY?"true":"false");
   s += ",\"enabled\":" + String(enabled?"true":"false");
   s += ",\"moving\":" + String(movimentando?"true":"false");
@@ -615,6 +619,23 @@ bool esperarConfirmacaoUART(const String &cmd, uint32_t seqAnterior) {
   return false;
 }
 
+bool ipNotebookValido(const String &s);
+
+bool verificarReceptorNotebook() {
+  if (WiFi.status() != WL_CONNECTED || !ipNotebookValido(notebookIp) || apiKey.length() < 12)
+    return false;
+  HTTPClient http;
+  const String url = "http://" + notebookIp + ":" + String(NOTEBOOK_PORT) + "/api/photos/ready";
+  if (!http.begin(url)) return false;
+  http.setConnectTimeout(1800);
+  http.setTimeout(2500);
+  http.addHeader("X-Photo-Token", apiKey);
+  const int code = http.GET();
+  const String body = code == 200 ? http.getString() : "";
+  http.end();
+  return code == 200 && body == "READY";
+}
+
 void initHttp() {
   const char* head[] = {"X-Api-Key"};
   server.collectHeaders(head, 1);
@@ -658,6 +679,24 @@ void initHttp() {
     if(stage!=IDLE || executando || pendenteId || fotoLock || movimentando || !enabled || !homedX || !homedY ||
        !lastStatusMs || millis()-lastStatusMs>1800 || !totalPontos) {
       server.send(409,"text/plain","Arduino deve estar conectado, parado, referenciado e sem foto pendente");return;
+    }
+    bool roteiroTemFoto = false;
+    for (uint8_t i=0; i<totalPontos; ++i) {
+      if (pontos[i].foto) { roteiroTemFoto = true; break; }
+    }
+    if (!roteiroTemFoto) {
+      server.send(409,"text/plain","Roteiro sem fotografias: marque Foto em pelo menos um ponto antes de iniciar");return;
+    }
+    // Preflight antes de qualquer movimento: se a camera ou o receptor falhar,
+    // a maquete permanece parada e nenhuma foto fica presa em PHOTO=WAIT.
+    if (!cameraReady) {
+      server.send(503,"text/plain","Camera nao inicializada; percurso autonomo bloqueado antes do movimento");return;
+    }
+    if (WiFi.status() != WL_CONNECTED) {
+      server.send(503,"text/plain","Wi-Fi desconectado; percurso autonomo bloqueado antes do movimento");return;
+    }
+    if (!verificarReceptorNotebook()) {
+      server.send(503,"text/plain","Notebook nao confirmou o receptor/gravação de fotos. Verifique IP, porta 8765, firewall e chave; nenhum movimento foi iniciado.");return;
     }
     indice=0; erro=""; executando=true;
     // Roteiro roda na ESP32 sem depender de comandos adicionais do notebook.
@@ -1088,6 +1127,7 @@ void setup() {
   if (!cameraMutex) { erro="Sem memoria para mutex da camera";stage=FAULT; }
   else initCamera();
   WiFi.mode(WIFI_STA);
+  WiFi.setAutoReconnect(true);
   WiFi.begin(wifiSsid.c_str(),wifiPassword.c_str());
   // Opcional: resolucao por atlas-cnc.local em redes com mDNS liberado.
   // Sem depender de WiFi para aceitar estado UART, tenta conexao em segundo plano

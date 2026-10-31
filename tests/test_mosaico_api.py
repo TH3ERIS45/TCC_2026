@@ -39,6 +39,16 @@ class MosaicAPITest(unittest.TestCase):
         return self.client.post('/api/photos/receive',data=jpeg(),headers={
             'X-Photo-Token':controle.TOKEN,'X-Photo-Id':str(pid),'X-Photo-X':str(x),'X-Photo-Y':str(y)})
 
+    def test_photo_receiver_preflight_auth_and_writable_dirs(self):
+        denied=self.client.get('/api/photos/ready')
+        self.assertEqual(denied.status_code,403)
+        ready=self.client.get('/api/photos/ready',headers={'X-Photo-Token':controle.TOKEN})
+        self.assertEqual(ready.status_code,200)
+        self.assertEqual(ready.data,b'READY')
+        self.assertTrue((controle.FOTOS/'mosaicos').is_dir())
+        self.assertEqual(list(controle.FOTOS.glob('.atlas-ready-*')),[])
+        self.assertEqual(list((controle.FOTOS/'mosaicos').glob('.atlas-ready-*')),[])
+
     def test_config_upload_generate_file_download(self):
         self.assertEqual(self.one_photo().status_code,200)
         cfg=self.client.get('/api/mosaico/config').json

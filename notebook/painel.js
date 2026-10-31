@@ -97,7 +97,7 @@
     const inside=valid && state?.arduino && geoCenter.x_steps<=state.xmax && geoCenter.y_steps<=state.ymax;
     const checked=$('geomReferenceCheck').checked;
     setText('geomCenterStatus',valid
-      ?`Centro ensinado: X=${geoCenter.x_steps}, Y=${geoCenter.y_steps} passos. ${inside?'Dentro dos limites atuais.':'Aguardando ou fora dos limites do Arduino.'}`
+      ?`Centro ensinado: Y=${geoCenter.x_steps}, X=${geoCenter.y_steps} passos. ${inside?'Dentro dos limites atuais.':'Aguardando ou fora dos limites do Arduino.'}`
       :'Centro físico ainda não ensinado. Posicione a lente e guarde a coordenada.');
     $('geomMarkCenter').disabled=!canTeach();
     $('geomGoCenter').disabled=!(inside && checked && isIdle() && state?.enabled && state.home_x && state.home_y && !commandBusy);
@@ -116,7 +116,7 @@
       geoCenter=response.centro;
       $('geomReferenceCheck').checked=true;
       updateGeometryPanel();
-      toast(`Centro da plantação salvo em X=${v.x}, Y=${v.y}. Sem movimento.`, 'success');
+      toast(`Centro da plantação salvo em Y=${v.x}, X=${v.y}. Sem movimento.`, 'success');
     }catch(err){fail(err,'Falha ao salvar centro da plantação');}
   }
   async function goPlotCenter(){
@@ -134,7 +134,7 @@
     }
     await command(`MOVE X ${x} Y ${y}`,{confirmText:`CENTRO REAL DO CANTEIRO (ENSINADO)
 
-Destino X=${x}, Y=${y} passos.
+Destino Y=${x}, X=${y} passos.
 
 O HOME físico é o mesmo de quando a posição foi ensinada? O curso está livre e a escala foi verificada? Sem sensores, referência errada pode causar colisão.`});
   }
@@ -226,10 +226,25 @@ O HOME físico é o mesmo de quando a posição foi ensinada? O curso está livr
     while(Date.now()<end) {
       await pause(350);
       const v=await freshPosition();
-      if(!v.arduino || !v.home_x || !v.home_y || v.active || v.photo_lock || v.stage!=='PARADO')throw new Error('Perda de referência, conexão ou máquina ocupada durante o movimento.');
-      if(!v.moving && v.x===x && v.y===y) {if(++confirmed>=2)return;} else confirmed=0;
+      if(!v.arduino || !v.home_x || !v.home_y || v.active || v.photo_lock || v.stage!=='PARADO')
+        throw new Error('Perda de referência, conexão ou máquina ocupada durante o movimento.');
+      if(!v.moving && v.x===x && v.y===y) {if(++confirmed>=2)return v;} else confirmed=0;
     }
-    throw new Error('Não foi possível confirmar a chegada ao destino. Confira a máquina antes de marcar ponto.');
+    // Relata a posição final real do Arduino. A coordenada interna X aparece
+    // como Y no painel; a coordenada interna Y aparece como X no painel.
+    const last=state;
+    const actual=last && Number.isSafeInteger(last.x) && Number.isSafeInteger(last.y)
+      ? `Última posição informada: Y=${last.x}, X=${last.y}${last.moving?' (ainda em movimento)':' (parada)'}.`
+      : 'Não foi possível obter a última posição do Arduino.';
+    throw new Error(`Chegada não confirmada. Destino: Y=${x}, X=${y}. ${actual} Confira a máquina antes de marcar ponto.`);
+  }
+  function jogMotionTimeoutMs(distanceSteps) {
+    // O Arduino permite velocidade mínima de 10 passos/s. Não use o valor
+    // editável do navegador: ele pode não corresponder ao SPEED aplicado no
+    // firmware (ou pode ter sido alterado noutra sessão).
+    const slowestFirmwarePps=10;
+    const travelMs=Math.ceil(Math.max(0,distanceSteps)/slowestFirmwarePps*1000);
+    return Math.min(600000,Math.max(10000,travelMs+15000));
   }
   async function jogTeach(axis,direction,delta) {
     if(teachMotionPending || teachMarkPending || commandBusy) {toast('Aguarde o movimento ou o registro do ponto atual.','error');return;}
@@ -242,10 +257,9 @@ O HOME físico é o mesmo de quando a posição foi ensinada? O curso está livr
       const y=axis==='Y'?Math.max(0,Math.min(before.ymax,before.y+direction*delta)):before.y;
       const result=await command(`JOG ${axis} ${direction*delta}`);
       if(result===false)return;
-      const pps=Math.max(10,Number($('speedPps').value)||60);
       const realDistance=Math.abs(x-before.x)+Math.abs(y-before.y);
-      await waitJogTarget(x,y,Math.min(600000,Math.max(10000,Math.ceil(realDistance/pps*1000)+10000)));
-      log(`Movimento concluído em X=${x}, Y=${y}. Pode marcar este ponto.`,'ok');
+      await waitJogTarget(x,y,jogMotionTimeoutMs(realDistance));
+      log(`Movimento concluído em Y=${x}, X=${y}. Pode marcar este ponto.`,'ok');
     }catch(err){fail(err,'Movimento não confirmado');}
     finally {teachMotionPending=false;updateScreen();}
   }
@@ -301,7 +315,7 @@ O HOME físico é o mesmo de quando a posição foi ensinada? O curso está livr
     holdJog=hold;
     teachMotionPending=true;
     button.classList.add('pressed-hold');
-    showHoldStatus('Segurando '+axis+(dir==='1'?'+':'-')+' ...');
+    showHoldStatus('Segurando '+(axis==='X'?'Y':'X')+(dir==='1'?'+':'-')+' ...');
     updateScreen();
     try {
       // O texto fw_version da série GC2145 era igual antes/depois do JOG.
@@ -335,8 +349,8 @@ O HOME físico é o mesmo de quando a posição foi ensinada? O curso está livr
       const v=await settledPosition();
       if(!route.some(p=>p.x===v.x && p.y===v.y)) {
         addPoint(v.x,v.y,photo);
-        log(`Ponto ensinado: X=${v.x}, Y=${v.y}, foto=${photo?'SIM':'NÃO'}`,'ok');
-      } else toast(`Já existe um ponto em X=${v.x}, Y=${v.y}. Desloque a câmera para marcar outro.`, 'error');
+        log(`Ponto ensinado: Y=${v.x}, X=${v.y}, foto=${photo?'SIM':'NÃO'}`,'ok');
+      } else toast(`Já existe um ponto em Y=${v.x}, X=${v.y}. Desloque a câmera para marcar outro.`, 'error');
     }catch(err){fail(err,'Não foi possível marcar o ponto');}
     finally {teachMarkPending=false;updateScreen();}
   }
@@ -349,7 +363,7 @@ O HOME físico é o mesmo de quando a posição foi ensinada? O curso está livr
       toast('A máquina não está parada. Estado atual: '+state.stage+'.','error');return false;
     }
     if(motion && (!state.home_x || !state.home_y)){
-      toast('HOME não confirmado pelo Arduino: X='+!!state.home_x+', Y='+!!state.home_y+'. Confira a referência física.','error');return false;
+      toast('HOME não confirmado pelo Arduino: Y='+!!state.home_x+', X='+!!state.home_y+'. Confira a referência física.','error');return false;
     }
     if(motion && !state.enabled){toast('Drivers desligados segundo o Arduino. Clique em Ativar drivers e aguarde a confirmação.','error');return false;}
     return true;
@@ -450,10 +464,12 @@ O HOME físico é o mesmo de quando a posição foi ensinada? O curso está livr
     setText('diagPanel',window.location.host);setText('diagTime',lastOk||'—');
     setText('diagWifi',state?.wifi?'Conectado':'Desconectado / desconhecido');
     setText('diagArduino',arduino?'Conectado pela UART':'Sem telemetria');
-    setText('diagHome',state?('X '+(state.home_x?'OK':'NÃO')+' / Y '+(state.home_y?'OK':'NÃO')):'—');
+    setText('diagHome',state?('Y '+(state.home_x?'OK':'NÃO')+' / X '+(state.home_y?'OK':'NÃO')):'—');
     const centerReady=isIdle() && !!state?.enabled && !!state?.home_x && !!state?.home_y;
-    setText('homeCenterStatus',!state?.arduino?'Arduino desconectado: centralização bloqueada.':!state.home_x||!state.home_y?'HOME ainda não confirmado em X/Y.':!state.enabled?'HOME confirmado: ative os drivers para centralizar.':!isIdle()?'Máquina ocupada: aguarde parada, sem foto pendente.':`Centro MECÂNICO do curso: X=${Math.floor(state.xmax/2)}, Y=${Math.floor(state.ymax/2)} passos; pode não coincidir com o meio do canteiro.`);
-    setText('centerLimitsInfo', state?.arduino && Number.isFinite(state.xmax) && Number.isFinite(state.ymax) ? `Centro mecânico calculado com os limites informados pelo Arduino: X=${Math.floor(state.xmax/2)}, Y=${Math.floor(state.ymax/2)} passos. Não é o centro do canteiro.` : 'Centro mecânico: aguardando limites do Arduino. Não é o centro do canteiro.');
+    const mechanicalY=Number.isSafeInteger(state?.center_x)?state.center_x:Math.floor((state?.xmax||1640)/2);
+    const mechanicalX=Number.isSafeInteger(state?.center_y)?state.center_y:Math.floor((state?.ymax||4550)/2);
+    setText('homeCenterStatus',!state?.arduino?'Arduino desconectado: centralização bloqueada.':!state.home_x||!state.home_y?'HOME ainda não confirmado em X/Y.':!state.enabled?'HOME confirmado: ative os drivers para centralizar.':!isIdle()?'Máquina ocupada: aguarde parada, sem foto pendente.':`Centro mecânico calibrado: Y=${mechanicalY}, X=${mechanicalX} passos; pode não coincidir com o meio do canteiro.`);
+    setText('centerLimitsInfo', state?.arduino && Number.isFinite(state.xmax) && Number.isFinite(state.ymax) ? `Destino calibrado informado pelo Arduino: Y=${mechanicalY}, X=${mechanicalX} passos. O eixo Y inclui ajuste de +42 mm; não é o centro do canteiro.` : 'Centro mecânico: aguardando limites do Arduino. Não é o centro do canteiro.');
     setText('controlStatusX',arduino?`${state.x} passos`:'—');
     setText('controlStatusY',arduino?`${state.y} passos`:'—');
     setText('controlStatusStage',state?.stage||'OFFLINE');
@@ -462,15 +478,15 @@ O HOME físico é o mesmo de quando a posição foi ensinada? O curso está livr
     setText('diagEnable',state?(state.enabled?'Ativados':'Desativados'):'—');
     setText('diagMotion',state?(state.moving?'Sim':'Não'):'—');
     setText('diagPending',!arduino?'Desconhecido':(state.photo_lock?state.photo_id:'Nenhuma'));
-    setText('diagLimits',state?`X: 0–${state.xmax} · Y: 0–${state.ymax}`:'—');
-    setText('maxPhysicalCoords',state?.arduino?`MAX lógico: X = ${state.xmax} passos · Y = ${state.ymax} passos`:'MAX programado: aguardando limites do Arduino');
+    setText('diagLimits',state?`Y: 0–${state.xmax} · X: 0–${state.ymax}`:'—');
+    setText('maxPhysicalCoords',state?.arduino?`MAX lógico: Y = ${state.xmax} passos · X = ${state.ymax} passos`:'MAX programado: aguardando limites do Arduino');
     $('confirmPhysicalMax').disabled=!isIdle() || commandBusy || teachMotionPending || teachMarkPending;
-    $('maxPreviewLabel').textContent=maxPreview?`PRÉVIA VIRTUAL — FUNDO: X=${state?.xmax??1640}, Y=${state?.ymax??4550} (não é posição física)`:'Visualização baseada na posição informada pelo Arduino';
+    $('maxPreviewLabel').textContent=maxPreview?`PRÉVIA VIRTUAL — FUNDO: Y=${state?.xmax??1640}, X=${state?.ymax??4550} (não é posição física)`:'Visualização baseada na posição informada pelo Arduino';
     $('maxPreviewLabel').classList.toggle('preview-on',maxPreview);
     $('previewRealBtn').hidden=!maxPreview;
     const xReal=state?.xmax?`${(state.x*328/state.xmax).toFixed(1)} mm`:'—';
     const yReal=state?.ymax?`${(state.y*910/state.ymax).toFixed(1)} mm`:'—';
-    const teachingStatus=state?.arduino?`X ${state.x} passos (${xReal}) · Y ${state.y} passos (${yReal})`:'Posição: aguardando Arduino';
+    const teachingStatus=state?.arduino?`Y ${state.x} passos (${xReal}) · X ${state.y} passos (${yReal})`:'Posição: aguardando Arduino';
     setText('teachPosition',teachingStatus);setText('cameraTeachPosition',teachingStatus);
     setText('teachNextPoint',String(Math.min(49,route.length+1)).padStart(2,'0'));
     setText('teachReady',teachMotionPending?'MOVIMENTANDO...':teachMarkPending?'REGISTRANDO...':!canTeach()?'AGUARDANDO HOME / DRIVERS':'PRONTO PARA MARCAR');
@@ -512,7 +528,7 @@ O HOME físico é o mesmo de quando a posição foi ensinada? O curso está livr
       function cell(content){const td=document.createElement('td');if(content instanceof Node)td.append(content);else td.textContent=String(content);tr.append(td);return td;}
       cell(i+1);
       for(const k of ['x','y']){
-        const num=document.createElement('input');num.type='number';num.min='0';num.max=k==='x'?(state?.xmax||1640):(state?.ymax||4550);num.value=p[k];num.setAttribute('aria-label',`Ponto ${i+1} ${k.toUpperCase()}`);
+        const num=document.createElement('input');num.type='number';num.min='0';num.max=k==='x'?(state?.xmax||1640):(state?.ymax||4550);num.value=p[k];num.setAttribute('aria-label',`Ponto ${i+1} ${k === 'x' ? 'Y' : 'X'}`);
         num.addEventListener('change',()=>{const n=int(num.value);if(!validatePoint(k==='x'?n:p.x,k==='y'?n:p.y)){toast('Coordenada fora dos limites','error');num.value=p[k];return;}p[k]=n;changeDirty(true);drawMap();});
         cell(num);
       }
@@ -539,7 +555,7 @@ O HOME físico é o mesmo de quando a posição foi ensinada? O curso está livr
     const lines=String(s).split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
     if(lines.length>48)throw new Error('Limite de 48 pontos excedido.');
     return lines.map((line,i)=>{
-      if(!/^\d+,\d+,[01]$/.test(line))throw new Error('Linha '+(i+1)+' inválida. Esperado: X,Y,0|1');
+      if(!/^\d+,\d+,[01]$/.test(line))throw new Error('Linha '+(i+1)+' inválida. Esperado: Y,X,0|1 (ordem das etiquetas do painel)');
       const [x,y,p]=line.split(',').map(Number);
       if(!validatePoint(x,y))throw new Error('Linha '+(i+1)+' fora dos limites da maquete.');
       return {x,y,p:p===1};
@@ -599,7 +615,7 @@ O HOME físico é o mesmo de quando a posição foi ensinada? O curso está livr
       const draft=window.AtlasPlanner.build(input);
       plannerDraft=draft;plannerConfigHash=JSON.stringify(input);
       $('plannerApply').disabled=false;
-      plannerMessage(`${draft.points.length} pontos · ${draft.cols} colunas × ${draft.rows} linhas · espaçamento máximo de ${draft.spacingX} passos X / ${draft.spacingY} passos Y. ${draft.perimeterOnly?'ATENÇÃO: apenas bordas, sem cobrir a área interna.':'Confirme na prévia a cobertura real antes de usar.'}`);
+      plannerMessage(`${draft.points.length} pontos · ${draft.cols} colunas × ${draft.rows} linhas · espaçamento máximo de ${draft.spacingX} passos Y / ${draft.spacingY} passos X. ${draft.perimeterOnly?'ATENÇÃO: apenas bordas, sem cobrir a área interna.':'Confirme na prévia a cobertura real antes de usar.'}`);
       drawPlanner(draft);
       log(`Prévia ${draft.mode}: ${draft.points.length} pontos; nenhum comando enviado à máquina.`,'ok');
     }catch(err){plannerDraft=null;plannerConfigHash=null;$('plannerApply').disabled=true;plannerMessage(err.message,true);drawPlanner(null);}
@@ -629,7 +645,7 @@ O HOME físico é o mesmo de quando a posição foi ensinada? O curso está livr
     ctx.beginPath();ctx.strokeStyle='#62bed5';ctx.lineWidth=2;ctx.setLineDash([6,5]);
     pts.forEach((p,i)=>{const [x,y]=xy(p);i?ctx.lineTo(x,y):ctx.moveTo(x,y);});ctx.stroke();ctx.setLineDash([]);
     pts.forEach((p,i)=>{const [x,y]=xy(p);ctx.beginPath();ctx.arc(x,y,pts.length>30?5:7,0,Math.PI*2);ctx.fillStyle=i===0?'#fbd17f':i===pts.length-1?'#7eaaff':'#59dbad';ctx.fill();ctx.fillStyle='#061624';ctx.font='bold 9px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(i+1),x,y);});
-    ctx.fillStyle='#b5cfdd';ctx.font='11px system-ui';ctx.textAlign='left';ctx.textBaseline='alphabetic';ctx.fillText('X 0 / Y 0',pad, h-7);ctx.fillText(`Limites X ${xmax}, Y ${ymax}`,pad,16);
+    ctx.fillStyle='#b5cfdd';ctx.font='11px system-ui';ctx.textAlign='left';ctx.textBaseline='alphabetic';ctx.fillText('Y 0 / X 0',pad, h-7);ctx.fillText(`Limites Y ${xmax}, X ${ymax}`,pad,16);
   }
 
   // A visualizacao isometrica usa geometria projetada em canvas 2D: nao depende
@@ -666,7 +682,7 @@ O HOME físico é o mesmo de quando a posição foi ensinada? O curso está livr
     }
     c.textAlign='left';c.textBaseline='alphabetic';c.font='bold 11px system-ui';c.fillStyle='#94b1c9';
     const x0=coord(0,0),x1=coord(maxX,0),y1=coord(0,maxY);
-    c.fillText('0,0',x0[0]-16,x0[1]+17);c.fillText('X '+maxX,x1[0]-22,x1[1]+17);c.fillText('Y '+maxY,y1[0]-12,y1[1]-12);
+    c.fillText('0,0',x0[0]-16,x0[1]+17);c.fillText('Y '+maxX,x1[0]-22,x1[1]+17);c.fillText('X '+maxY,y1[0]-12,y1[1]-12);
   }
 
   async function loadConfig(){
@@ -755,7 +771,7 @@ O HOME físico é o mesmo de quando a posição foi ensinada? O curso está livr
     }catch(err){log('Falha ao atualizar galeria: '+err.message,'error');}
   }
   function openPhoto(name){$('modalImage').src='/fotos/'+encodeURIComponent(name);setText('modalCaption',name);$('photoModal').hidden=false;}
-  function setSpeedHint(){const v=Number($('speedPps').value);setText('speedHint',Number.isFinite(v)&&v>0?`≈ ${(v*328/(state?.xmax||1640)).toFixed(2)} mm/s no eixo X (ESCALA TEÓRICA do firmware, não medida nas fotos). Velocidades maiores exigem calibração mecânica.`:'Valor de velocidade inválido.');}
+  function setSpeedHint(){const v=Number($('speedPps').value);setText('speedHint',Number.isFinite(v)&&v>0?`≈ ${(v*328/(state?.xmax||1640)).toFixed(2)} mm/s no eixo Y (ESCALA TEÓRICA do firmware, não medida nas fotos). Velocidades maiores exigem calibração mecânica.`:'Valor de velocidade inválido.');}
 
   async function action(name,photoSource=''){
     switch(name){
@@ -790,7 +806,7 @@ O HOME físico é o mesmo de quando a posição foi ensinada? O curso está livr
           toast('Desative os drivers antes do alinhamento físico. Depois confirme MAX.','error');return;
         }
         const mx=before.xmax,my=before.ymax;
-        if(!confirm(`REFERÊNCIA MAX SEM SENSORES — NÃO MOVIMENTA MOTOR\n\nConfirma que alinhou FISICAMENTE e verificou X no extremo máximo e Y no extremo máximo, sem forçar os batentes?\n\nO Arduino passará a considerar X=${mx} e Y=${my} passos. HOME atual será redefinido.\n\nA confirmação errada poderá causar colisão na próxima centralização.`))return;
+        if(!confirm(`REFERÊNCIA MAX SEM SENSORES — NÃO MOVIMENTA MOTOR\n\nConfirma que alinhou FISICAMENTE e verificou Y no extremo máximo e X no extremo máximo, sem forçar os batentes?\n\nO Arduino passará a considerar Y=${mx} e X=${my} passos. HOME atual será redefinido.\n\nA confirmação errada poderá causar colisão na próxima centralização.`))return;
         const set=await command(`SETPOS X ${mx} Y ${my}`);
         if(set===false)return;
         try{
@@ -804,7 +820,7 @@ O HOME físico é o mesmo de quando a posição foi ensinada? O curso está livr
             !s.moving && !s.photo_lock && !s.active, 'HOME MAX');
         }catch(err){fail(err,'HOME MAX não confirmado');return;}
         maxPreview=false;updateScreen();
-        log(`Referência MAX manual confirmada: X=${mx}, Y=${my} (sem movimentar).`,'ok');
+        log(`Referência MAX manual confirmada: Y=${mx}, X=${my} (sem movimentar).`,'ok');
         toast('MAX físico e HOME registrados. Agora você pode ativar os drivers e centralizar.','success');
         break;
       }
@@ -812,22 +828,23 @@ O HOME físico é o mesmo de quando a posição foi ensinada? O curso está livr
       case 'define-zero':{
         invalidateCenterCheck();
         if(!requireReady())return;
-        if(!confirm('ATENÇÃO: a máquina NÃO irá se mover. Confirma que alinhou FISICAMENTE os dois eixos na origem mínima (X0/Y0), sem forçar os batentes? As referências HOME anteriores serão invalidadas.'))return;
+        if(!confirm('ATENÇÃO: a máquina NÃO irá se mover. Confirma que alinhou FISICAMENTE os dois eixos na origem mínima (Y0/X0), sem forçar os batentes? As referências HOME anteriores serão invalidadas.'))return;
         const result=await command('SETPOS X 0 Y 0');
         if(result!==false)toast('Posição lógica enviada: confirme HOME manual ANTES de centralizar.','info');
         break;
       }
       case 'auto-center':{
         if(!requireReady(true))return;
-        const midX=Math.floor(state.xmax/2),midY=Math.floor(state.ymax/2);
-        if(!confirm(`CENTRO MECÂNICO DO CURSO (NÃO É CENTRO DO CANTEIRO)\nDestino X=${midX} e Y=${midY} passos.\n\nA referência física escolhida (X0/Y0 ou MAX) foi conferida, os limites/escala estão calibrados, os dois eixos estão livres e você pode parar a máquina se necessário?\n\nSem referência física correta, o movimento pode colidir com a estrutura.`))return;
+        const midX=Number.isSafeInteger(state.center_x)?state.center_x:Math.floor(state.xmax/2);
+        const midY=Number.isSafeInteger(state.center_y)?state.center_y:Math.floor(state.ymax/2);
+        if(!confirm(`CENTRO MECÂNICO CALIBRADO (NÃO É CENTRO DO CANTEIRO)\nDestino Y=${midX} e X=${midY} passos.\n\nO destino Y recebe ajuste estimado de +42 mm para coincidir melhor com o centro do trilho de aproximadamente 40 cm. A referência física escolhida continua sendo o HOME manual; confirme-o, confira o curso livre e mantenha as mãos afastadas antes de continuar.`))return;
         await command('CENTER');
         break;
       }
       case 'geom-mark-center':await teachPlotCenter();break;
       case 'geom-go-center':await goPlotCenter();break;
-      case 'home-x':invalidateCenterCheck();if(confirm('Confirma referência física do eixo X? O HOME não move motor.'))await command('HOME X');break;
-      case 'home-y':invalidateCenterCheck();if(confirm('Confirma referência física do eixo Y? O HOME não move motor.'))await command('HOME Y');break;
+      case 'home-x':invalidateCenterCheck();if(confirm('Confirma referência física do eixo Y? O HOME não move motor.'))await command('HOME X');break;
+      case 'home-y':invalidateCenterCheck();if(confirm('Confirma referência física do eixo X? O HOME não move motor.'))await command('HOME Y');break;
       case 'unhome':invalidateCenterCheck();await command('UNHOME',{confirmText:'Invalidar HOME de ambos os eixos?'});break;
       case 'enable':await command('ENABLE 1');break;
       case 'disable':await command('ENABLE 0',{confirmText:'Liberar drivers pode permitir movimento livre dos eixos. Confirmar?'});break;
@@ -844,7 +861,7 @@ O HOME físico é o mesmo de quando a posição foi ensinada? O curso está livr
         await command(`SETPOS X ${x} Y ${y}`,{confirmText:'Isso altera SOMENTE as coordenadas lógicas, SEM mover motores, e invalida o HOME. Confirma?'});break;
       }
       case 'goto-center':if(requireReady(true))await command('CENTER',{confirmText:'Mover até o meio do CURSO MECÂNICO? NÃO é necessariamente o centro das plantas. Área livre e HOME conferido?'});break;
-      case 'goto-origin':if(requireReady(true))await command('MOVE X 0 Y 0',{confirmText:'Mover fisicamente até X=0,Y=0? Confira HOME e área livre.'});break;
+      case 'goto-origin':if(requireReady(true))await command('MOVE X 0 Y 0',{confirmText:'Mover fisicamente até Y=0,X=0? Confira HOME e área livre.'});break;
       case 'add-current':await markCurrentPosition(photoSource ? $(photoSource).checked : true);break;
       case 'add-point':addPoint(int($('pointX').value),int($('pointY').value),$('pointPhoto').checked);break;
       case 'planner-preview':plannerPreview();break;
@@ -857,8 +874,9 @@ O HOME físico é o mesmo de quando a posição foi ensinada? O curso está livr
         if(liveOn)stopLive('Pausado para o roteiro');
         if(!requireReady(true))return;
         if(!route.length){toast('Cadastre pelo menos um ponto.','error');return;}
+        if(!route.some(point=>point.p)){toast('Marque Foto em pelo menos um ponto para o percurso fotografar.','error');return;}
         if(dirty){toast('Salve o roteiro antes de iniciar.','error');return;}
-        await send('/api/start','',{confirmText:'Confirme HOME físico, área livre, alimentação segura e roteiro salvo. INICIAR percurso?'});break;
+        await send('/api/start','',{timeout:10000,confirmText:`Confirme HOME físico, área livre, alimentação segura, câmera e notebook conectados. O roteiro tem ${route.filter(point=>point.p).length} ponto(s) com foto. O sistema verificará a gravação no notebook antes de mover. INICIAR percurso?`});break;
       }
       case 'flash-on':await setFlash('ON');break;
       case 'flash-off':await setFlash('OFF');break;
@@ -961,7 +979,7 @@ O HOME físico é o mesmo de quando a posição foi ensinada? O curso está livr
   $('geomReferenceCheck').addEventListener('change',updateGeometryPanel);
   loadGeometry();
   setInterval(()=>{setText('clock',now());},1000);setText('clock',now());
-  log('Painel v4.3: painel simplificado; movimento e marcação reunidos em Controle; percursos, stream, mosaicos e PHOTOACK preservados.');
+  log('Painel v4.7: prazo JOG baseado no limite seguro do firmware; chegada confirmada por telemetria; PHOTOACK preservado.');
   updateScreen();setSpeedHint();drawPlanner(null);
   loadConfig();updateStatus();refreshGallery();mosaicLoad();
   setInterval(updateStatus,1200);

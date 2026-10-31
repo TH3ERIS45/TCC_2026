@@ -10,7 +10,7 @@ class MaxVirtualTest(unittest.TestCase):
     def test_botoes_em_visao_geral_e_movimentacao(self):
         for name in ('preview-max','preview-real','confirm-physical-max','auto-center'):
             self.assertIn(f'data-action="{name}"',HTML)
-        self.assertIn('X máximo / Y máximo',HTML)
+        self.assertIn('Y máximo / X máximo',HTML)
         self.assertIn('NÃO movimenta os eixos',HTML)
 
     def test_preview_nao_envia_telemetria_falsa(self):

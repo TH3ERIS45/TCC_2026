@@ -13,6 +13,7 @@ import json
 import os
 import re
 import threading
+import tempfile
 import time
 import sys
 from datetime import datetime
@@ -103,6 +104,26 @@ def salvar_foto(data: bytes, photo_id: str, x: str, y: str, pasta: Path = FOTOS)
                 fh.flush()
                 os.fsync(fh.fileno())
     return path
+
+
+@app.get('/api/photos/ready')
+def photos_ready():
+    """Preflight autenticado: confirma que o notebook consegue gravar fotos."""
+    if request.headers.get('X-Photo-Token', '') != TOKEN:
+        return Response('Chave de upload incorreta', status=403)
+    try:
+        FOTOS.mkdir(parents=True, exist_ok=True)
+        # Fotos/manifesto e estado de sessão automática precisam ser graváveis.
+        session_dir = FOTOS / 'mosaicos'
+        session_dir.mkdir(parents=True, exist_ok=True)
+        for folder in (FOTOS, session_dir):
+            with tempfile.NamedTemporaryFile(prefix='.atlas-ready-', dir=folder) as probe:
+                probe.write(b'ATLAS-CNC-READY')
+                probe.flush()
+                os.fsync(probe.fileno())
+    except OSError as err:
+        return Response('Armazenamento de fotos/sessao indisponivel: ' + str(err), status=503)
+    return Response('READY', status=200, mimetype='text/plain')
 
 
 @app.post('/api/photos/receive')
@@ -382,7 +403,7 @@ def proxy(resource):
             request.method, ESP_URL + target,
             headers={'X-Api-Key': TOKEN, 'Content-Type': 'text/plain'},
             data=request.get_data() if request.method == 'POST' else None,
-            timeout=15 if target == '/api/manual-photo' else 3.5,
+            timeout=25 if target == '/api/manual-photo' else 8 if target == '/api/start' else 3.5,
         )
         # Só iniciar sessão se a ESP32 aceitou de fato /api/start.
         if r.status_code == 200 and target == '/api/start':

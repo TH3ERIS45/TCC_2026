@@ -1,5 +1,5 @@
 /*
- * CNC Shield v3 - Firmware v8.0 UART DIRETO + HOME MANUAL + EIXOS FINAIS
+ * CNC Shield v3 - Firmware v8.2 CENTER CALIBRADO + HOME MANUAL + EIXOS FINAIS
  * Arduino Uno + CNC Shield v3 + A4988/DRV8825
  *
  * Esta versão NÃO usa fim de curso/sensor.
@@ -32,7 +32,7 @@
  *   JOG X <passos>
  *   JOG Y <passos>
  *   MOVE X <passos> Y <passos>
- *   CENTER            -> move para o centro geométrico; interface mostra X=0, Y=0
+ *   CENTER            -> move para o centro mecânico calibrado; não altera limites
  *   SPEED <us_por_passo>
  *   ENABLE 0/1
  *   SCANMOVE X <passos> Y <passos> P <0|1> ID <1..999999999>
@@ -87,6 +87,16 @@ const float STEPS_PER_MM_Y = (MOTOR_STEPS_PER_REV * MICROSTEPS_Y) /
 
 const long MAX_X = (long)(TRAVEL_X_MM * STEPS_PER_MM_X + 0.5f);
 const long MAX_Y = (long)(TRAVEL_Y_MM * STEPS_PER_MM_Y + 0.5f);
+
+// Centro mecanico ajustado pela foto da montagem: o trilho transversal (rotulo
+// Y no painel v4.5) mede aproximadamente 400 mm; o curso interno calibrado e
+// 328 mm. A posicao central do trilho fica cerca de 42 mm apos o meio do curso
+// logico calculado. X interno e exibido como Y no painel; +X desloca a direita.
+// Ajuste SOMENTE este valor se a verificacao fisica fina ainda mostrar desvio.
+const float CENTER_OFFSET_X_MM = 42.0f;
+const long CENTER_OFFSET_X_STEPS = (long)(CENTER_OFFSET_X_MM * STEPS_PER_MM_X + 0.5f);
+const long CENTER_TARGET_X = (MAX_X / 2L) + CENTER_OFFSET_X_STEPS;
+const long CENTER_TARGET_Y = MAX_Y / 2L;
 
 // ============================================================
 // SENTIDO ELÉTRICO
@@ -208,6 +218,8 @@ void sendTelemetry() {
   Serial.print(F(",HY=")); Serial.print(homedY ? 1 : 0);
   Serial.print(F(",XMAX=")); Serial.print(MAX_X);
   Serial.print(F(",YMAX=")); Serial.print(MAX_Y);
+  Serial.print(F(",CENTERX=")); Serial.print(CENTER_TARGET_X);
+  Serial.print(F(",CENTERY=")); Serial.print(CENTER_TARGET_Y);
   Serial.print(F(",SPMX=")); Serial.print(STEPS_PER_MM_X, 4);
   Serial.print(F(",SPMY=")); Serial.print(STEPS_PER_MM_Y, 4);
   Serial.print(F(",XMM=")); Serial.print(posX / STEPS_PER_MM_X, 2);
@@ -655,6 +667,11 @@ void processCommand(String cmd) {
       Serial.println(F("[ERRO] CENTER: aguarde a maquina parar."));
       return;
     }
+    if (CENTER_TARGET_X < 0 || CENTER_TARGET_X > MAX_X ||
+        CENTER_TARGET_Y < 0 || CENTER_TARGET_Y > MAX_Y) {
+      Serial.println(F("[ERRO] CENTER: ajuste calibrado fora dos limites; movimento bloqueado."));
+      return;
+    }
     if (!driversEnabled) {
       Serial.println(F("[ERRO] Drivers desabilitados."));
       return;
@@ -663,12 +680,12 @@ void processCommand(String cmd) {
       Serial.println(F("[ERRO] Faça o HOME manual antes de ir ao centro."));
       return;
     }
-    targetX = MAX_X / 2L;
-    targetY = MAX_Y / 2L;
+    targetX = CENTER_TARGET_X;
+    targetY = CENTER_TARGET_Y;
     motionMode = (targetX == posX && targetY == posY) ? MOTION_IDLE : MOTION_TARGET;
-    Serial.print(F("[CENTER] Destino interno X=")); Serial.print(targetX);
-    Serial.print(F(" Y=")); Serial.print(targetY);
-    Serial.println(F(" | interface/OpenSCAD: X=0.00 mm Y=0.00 mm"));
+    Serial.print(F("[CENTER] Destino do painel Y=")); Serial.print(targetX);
+    Serial.print(F(" (X interno), painel X=")); Serial.print(targetY);
+    Serial.println(F(" (Y interno)"));
     return;
   }
 
@@ -789,11 +806,14 @@ void setup() {
   Serial.begin(115200);
   inputBuffer.reserve(96);
 
-  Serial.println(F("[FW] CNC v8.1 JOG/MOVE guard UART ESP32 PHOTOACK PROTO=2 - X transversal / Y longitudinal"));
+  Serial.println(F("[FW] CNC v8.2 CENTER CAL JOG/MOVE guard UART ESP32 PHOTOACK PROTO=2 - X transversal / Y longitudinal"));
   Serial.print(F("[OPENSCAD] Curso X=")); Serial.print(TRAVEL_X_MM, 1);
   Serial.print(F(" mm | Y=")); Serial.print(TRAVEL_Y_MM, 1); Serial.println(F(" mm"));
-  Serial.print(F("[CAL] X=")); Serial.print(STEPS_PER_MM_X, 4);
-  Serial.print(F(" passos/mm | Y=")); Serial.print(STEPS_PER_MM_Y, 4); Serial.println(F(" passos/mm"));
+  Serial.print(F("[CAL] X interno/painel Y=")); Serial.print(STEPS_PER_MM_X, 4);
+  Serial.print(F(" passos/mm | Y interno/painel X=")); Serial.print(STEPS_PER_MM_Y, 4); Serial.println(F(" passos/mm"));
+  Serial.print(F("[CENTER CAL] painel Y=")); Serial.print(CENTER_TARGET_X);
+  Serial.print(F(" passos (+")); Serial.print(CENTER_OFFSET_X_MM, 1);
+  Serial.println(F(" mm); painel X usa metade do curso"));
   Serial.println(F("[INFO] Interno: 0..MAX | Interface/OpenSCAD: centro = X0 Y0."));
   Serial.println(F("[INFO] Posicao inicial interna no centro; interface inicia em X=0 Y=0."));
   sendTelemetry();

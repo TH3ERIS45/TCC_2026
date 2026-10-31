@@ -1,7 +1,7 @@
 {
-  "state": "stopped",
+  "state": "running",
   "offset": 3516,
-  "started_at": "2026-10-29T09:09:59",
+  "started_at": "2026-10-31T18:04:20",
   "result": null,
   "error": ""
 }

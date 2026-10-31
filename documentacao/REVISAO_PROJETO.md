@@ -29,9 +29,19 @@ Também foram preservados o gerador de mosaico, o planejador de percurso, os fon
 - `node --check` nos três módulos JavaScript: passou.
 - Análise sintática do HTML: 136 IDs verificados, sem duplicatas.
 - Análise sintática do CSS: passou.
-- `python -m pytest -q`: 88 passaram; 1 foi ignorado porque Flask não está instalado no ambiente de revisão. Flask está declarado em `notebook/requirements.txt`; o teste de API do mosaico deve ser executado após instalar as dependências do projeto.
+- `python -m pytest -q`: 98 passaram; 1 foi ignorado porque Flask não está instalado no ambiente de revisão. Flask está declarado em `notebook/requirements.txt`; o teste de API do mosaico e o novo teste do preflight devem ser executados após instalar as dependências do projeto.
 
 
 ## Atualização v4.4 — sentido físico dos eixos
 
 Após relato de que X+/X− e Y+/Y− moviam a maquete no sentido oposto ao modelo 3D, foram invertidas as polaridades `DIR_X_POS` e `DIR_Y_POS` no firmware Arduino. O painel e o firmware ESP32-CAM não foram alterados nesta correção. É necessário regravar o Arduino e confirmar os quatro sentidos com deslocamentos mínimos em região intermediária do curso; não houve teste físico nesta entrega. Consulte `documentacao/CORRECAO_SENTIDO_EIXOS_v4_4.md`.
+
+
+## Atualização v4.6 — centro mecânico e percurso fotográfico
+
+- O comando `CENTER` passou a usar um destino calibrado independente do movimento comum: canal interno X (etiqueta Y na interface) com offset inicial de +42 mm, equivalente a +210 passos no fuso/polia configurado em 5 passos/mm. O destino reportado na telemetria é Y=1030 passos; o canal interno Y (etiqueta X) permanece em 2275 passos. O offset é estimado pela foto e não é calibração metrológica; deve ser confirmado na maquete. O firmware bloqueia destinos CENTER fora dos limites.
+- O painel recebe `CENTERX/CENTERY` da telemetria e mostra o destino efetivo usado pelo Arduino. JOG, MOVE e SCANMOVE mantêm coordenadas, limites e escala originais.
+- O início autônomo agora exige ao menos um ponto com fotografia e valida câmera, Wi-Fi e receptor autenticado do notebook antes do primeiro movimento. O notebook testa gravação nas pastas de fotos e de sessão do mosaico.
+- O fluxo por ponto permanece `SCANMOVE` → `DONE` → espera de 1,4 s → captura RGB565 → JPEG válido → upload HTTP confirmado e manifesto sincronizado → `PHOTOACK`. Se captura/upload falham, não envia ACK e a máquina não avança sozinha para o próximo ponto.
+- Regravar Arduino (firmware v8.2) e ESP32-CAM (firmware v4.3). Preservar a configuração Wi-Fi/chave da ESP32 na NVS; não selecionar apagamento total da flash durante a gravação. Atualizar o servidor e painel Python no notebook.
+- Não foi possível compilar os firmwares nesta máquina de revisão porque `arduino-cli`, PlatformIO e `avr-g++` não estão instalados. Não houve teste físico. A suíte Python teve 98 testes aprovados e 1 ignorado por ausência do Flask; `compileall`, `node --check`, análise de IDs HTML e parsing CSS passaram.

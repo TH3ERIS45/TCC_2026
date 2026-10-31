@@ -3,11 +3,11 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8"/><meta content="width=device-width,initial-scale=1" name="viewport"/>
-<meta content="#0b1020" name="theme-color"/><title>ATLAS CNC · Painel v4.3</title>
-<link href="/painel.css?v=43enxuto" rel="stylesheet"/>
-<script defer="" src="/modelo3d.js?v=42"></script>
+<meta content="#0b1020" name="theme-color"/><title>ATLAS CNC · Painel v4.7</title>
+<link href="/painel.css?v=45etiquetas" rel="stylesheet"/>
+<script defer="" src="/modelo3d.js?v=45etiquetas"></script>
 <script defer="" src="/planejador.js"></script>
-<script defer="" src="/painel.js?v=43enxuto"></script>
+<script defer="" src="/painel.js?v=45etiquetas"></script>
 </head>
 <body data-ui-mode="simple">
 <div class="app-shell">
@@ -40,12 +40,12 @@
     <div class="card-heading"><div><span class="card-kicker">POSIÇÃO ATUAL</span><h2>Coordenadas dos eixos</h2></div></div>
     <div class="axis-readings">
       <div class="axis-reading">
-        <div class="axis-reading-head"><b class="axis-letter x">X</b><span>Transversal</span></div>
+        <div class="axis-reading-head"><b class="axis-letter y">Y</b><span>Transversal</span></div>
         <div class="axis-reading-value"><strong id="dashX">—</strong><small>passos</small></div>
         <div class="axis-reading-foot"><span id="dashXmm">— mm</span><span class="ref-badge" id="dashHX">SEM HOME</span></div>
       </div>
       <div class="axis-reading">
-        <div class="axis-reading-head"><b class="axis-letter y">Y</b><span>Longitudinal</span></div>
+        <div class="axis-reading-head"><b class="axis-letter x">X</b><span>Longitudinal</span></div>
         <div class="axis-reading-value"><strong id="dashY">—</strong><small>passos</small></div>
         <div class="axis-reading-foot"><span id="dashYmm">— mm</span><span class="ref-badge" id="dashHY">SEM HOME</span></div>
       </div>
@@ -73,10 +73,10 @@
     </div>
   </div>
   <div class="viz-viewport">
-    <canvas aria-label="Mapa X Y e pontos cadastrados" id="mapCanvas"></canvas>
-    <canvas aria-label="Modelo tridimensional baseado no projeto OpenSCAD da maquete com posição X Y e percurso" hidden="" id="model3dCanvas"></canvas>
+    <canvas aria-label="Mapa dos eixos Y transversal e X longitudinal, com pontos cadastrados" id="mapCanvas"></canvas>
+    <canvas aria-label="Modelo tridimensional da maquete com posição dos eixos Y e X e percurso" hidden="" id="model3dCanvas"></canvas>
     <div class="orbit-controls" hidden="" id="orbitControls"><button data-3d="zoom-in" title="Ampliar visualização 3D" type="button">+</button><button data-3d="zoom-out" title="Reduzir visualização 3D" type="button">−</button><button data-3d="reset" title="Restaurar ângulo da câmera" type="button">↺</button><span>Arraste para girar · Roda para zoom</span></div>
-    <div class="map-meta"><span>● <b>X</b> transversal</span><span>● <b>Y</b> longitudinal</span></div>
+    <div class="map-meta"><span>● <b>Y</b> transversal</span><span>● <b>X</b> longitudinal</span></div>
   </div>
   <div class="max-viz-toolbar advanced-only"><button class="btn secondary" data-action="preview-max" id="previewMaxBtn" type="button">◎ Visualizar MAX X/Y no fundo do 3D</button><button class="btn secondary" data-action="preview-real" hidden="" id="previewRealBtn" type="button">↺ Voltar à posição real</button><span aria-live="polite" class="max-preview-label" id="maxPreviewLabel" role="status">Visualização baseada no Arduino</span></div>
   <div class="viz-legend"><span><i class="legend-item current"></i> Posição atual</span><span><i class="legend-item photo"></i> Parada com foto</span><span><i class="legend-item transit"></i> Ponto sem foto</span><span><i class="legend-line"></i> Roteiro</span></div>
@@ -88,9 +88,9 @@
 <div class="card-heading"><div><span class="card-kicker">01 · REFERÊNCIA FÍSICA</span><h2>Preparar a máquina</h2></div><span class="tag">Sem fim de curso</span></div>
 <p class="hint warning">A maquete <strong>não detecta a posição física ao ligar</strong> nem os seus limites. Faça o alinhamento com os motores desligados e a máquina parada. Registrar HOME ou MAX não movimenta os eixos.</p>
 <div class="reference-grid">
-<section class="reference-method" aria-label="Referenciar pela origem mínima"><div class="reference-method-title"><span class="reference-number">A</span><div><h3>Pelo canto X0 / Y0</h3><p>Alinhe fisicamente os dois eixos na origem mínima, sem forçar batentes. Depois ligue a máquina.</p></div></div>
-<div class="two-btn"><button class="btn secondary" data-action="define-zero">1 · Definir X0/Y0</button><button class="btn secondary" data-action="home">2 · Confirmar HOME</button></div></section>
-<section class="reference-method" aria-label="Referenciar pelo máximo físico"><div class="reference-method-title"><span class="reference-number">B</span><div><h3>Pelo canto MAX (fundo)</h3><p>Alternativa: alinhe X máximo / Y máximo fisicamente. A prévia 3D NÃO movimenta os eixos.</p></div></div>
+<section class="reference-method" aria-label="Referenciar pela origem mínima"><div class="reference-method-title"><span class="reference-number">A</span><div><h3>Pelo canto Y0 / X0</h3><p>Alinhe fisicamente os dois eixos na origem mínima, sem forçar batentes. Depois ligue a máquina.</p></div></div>
+<div class="two-btn"><button class="btn secondary" data-action="define-zero">1 · Definir Y0/X0</button><button class="btn secondary" data-action="home">2 · Confirmar HOME</button></div></section>
+<section class="reference-method" aria-label="Referenciar pelo máximo físico"><div class="reference-method-title"><span class="reference-number">B</span><div><h3>Pelo canto MAX (fundo)</h3><p>Alternativa: alinhe Y máximo / X máximo fisicamente. A prévia 3D NÃO movimenta os eixos.</p></div></div>
 <div class="max-calibration-actions"><button class="btn secondary" data-action="preview-max">◈ Mostrar MAX no 3D</button><button class="btn secondary" data-action="preview-real">↺ Posição real</button></div>
 <p aria-live="polite" class="max-calibration-values" id="maxPhysicalCoords">MAX programado: aguardando Arduino</p>
 <button class="btn secondary full" id="confirmPhysicalMax" data-action="confirm-physical-max">⌖ Confirmar MAX físico + HOME (sem mover)</button></section>
@@ -101,9 +101,9 @@
 <p class="hint" id="centerLimitsInfo">Centro mecânico: aguardando limites informados pelo Arduino. Não confundir com o centro das plantas.</p>
 </article>
 <article class="card field-geometry-card" id="geomCard" aria-label="Medidas reais e centro do canteiro">
-<div class="card-heading"><div><span class="card-kicker">DIMENSÕES DA MAQUETE · V4.3</span><h2>Centro real das plantas</h2></div><span class="tag">Calibração no notebook</span></div>
-<p class="hint">Medidas identificadas na montagem: <strong>canteiro 30 × 83 cm</strong>; travessa transversal ~39–40 cm; guia longitudinal ~1 m; carrinho ~8 cm. O centro geométrico do canteiro fica a <strong>15 cm e 41,5 cm de suas bordas</strong>. A escala de 5 passos/mm é nominal, derivada dos parâmetros de motor e transmissão do firmware; não substitui a calibração física da lente.</p>
-<div class="geom-specs"><span><small>CANTEIRO X</small><strong>300 mm</strong></span><span><small>CANTEIRO Y</small><strong>830 mm</strong></span><span><small>CENTRO DA ÁREA</small><strong>150 × 415 mm</strong></span><span><small>ESCALA NOMINAL DO FIRMWARE</small><strong>5 passos/mm</strong></span></div>
+<div class="card-heading"><div><span class="card-kicker">DIMENSÕES DA MAQUETE · V4.5</span><h2>Centro real das plantas</h2></div><span class="tag">Calibração no notebook</span></div>
+<p class="hint">Medidas identificadas na montagem: <strong>canteiro 30 × 83 cm</strong>; travessa transversal ~39–40 cm; guia longitudinal ~1 m; carrinho ~8 cm. O centro geométrico do canteiro fica a <strong>41,5 cm e 15 cm de suas bordas</strong>. A escala de 5 passos/mm é nominal, derivada dos parâmetros de motor e transmissão do firmware; não substitui a calibração física da lente.</p>
+<div class="geom-specs"><span><small>CANTEIRO Y</small><strong>300 mm</strong></span><span><small>CANTEIRO X</small><strong>830 mm</strong></span><span><small>CENTRO DA ÁREA (X × Y)</small><strong>415 × 150 mm</strong></span><span><small>ESCALA NOMINAL DO FIRMWARE</small><strong>5 passos/mm</strong></span></div>
 <div class="geom-procedure"><strong>Ensinar o centro da câmera — uma vez após calibrar o HOME</strong>
 <p>Use X/Y e o vídeo para deixar <strong>a lente</strong> sobre o centro do canteiro. Não empurre o carrinho à mão depois do HOME. Clique em <b>Guardar centro atual</b> para salvar os passos X/Y no notebook.</p></div>
 <p aria-live="polite" class="home-status" id="geomCenterStatus">Centro físico ainda não ensinado.</p>
@@ -111,7 +111,7 @@
 <label class="geom-check"><input id="geomReferenceCheck" type="checkbox"/> Confirmei o mesmo HOME físico usado ao ensinar o centro nesta sessão.</label>
 <p class="hint warning">Esse centro é uma coordenada ensinada, não um sensor. Se refizer o HOME com outra referência ou alterar a transmissão/calibração, ensine novamente. Não substitui os limites do firmware; confira o percurso livre antes de mover.</p>
 </article>
-<div class="control-position"><span><small>POSIÇÃO X</small><strong id="controlStatusX">—</strong></span><span><small>POSIÇÃO Y</small><strong id="controlStatusY">—</strong></span><span><small>ESTADO</small><strong id="controlStatusStage">—</strong></span></div><div class="control-workspace"><article class="card live-camera-card">
+<div class="control-position"><span><small>POSIÇÃO Y</small><strong id="controlStatusX">—</strong></span><span><small>POSIÇÃO X</small><strong id="controlStatusY">—</strong></span><span><small>ESTADO</small><strong id="controlStatusStage">—</strong></span></div><div class="control-workspace"><article class="card live-camera-card">
 <div class="card-heading"><div><span class="card-kicker">CALIBRAÇÃO DO ENQUADRAMENTO · MJPEG</span><h2>ESP32-CAM ao vivo</h2></div><span aria-live="polite" class="tag" id="liveStatus" role="status">Desligado</span></div>
 <div class="live-camera-toolbar">
 <button class="btn success" data-action="live-start" id="liveStart" type="button">▶ Iniciar câmera ao vivo</button>
@@ -136,7 +136,7 @@
 <label class="hold-jog-toggle"><input id="holdJogMode" type="checkbox"/> <strong>Movimento contínuo — segurar X/Y</strong></label>
 <p id="holdJogStatus" class="hint" aria-live="polite">Desativado: um clique move a quantidade escolhida. Ative para mover apenas enquanto segurar.</p>
 <label class="field">Passos por comando<div class="input-unit"><input id="moveDelta" max="5000" min="1" type="number" value="5"/><span>passos</span></div></label>
-<div class="jogpad big"><button class="up" data-jog="Y:1">Y + <span>↑</span></button><button class="left" data-jog="X:-1"><span>←</span> X −</button><div class="jog-center">XY</div><button class="right" data-jog="X:1">X + <span>→</span></button><button class="down" data-jog="Y:-1">Y − <span>↓</span></button></div>
+<div class="jogpad big"><button class="up" data-jog="Y:1">X + <span>↑</span></button><button class="left" data-jog="X:-1"><span>←</span> Y −</button><div class="jog-center">XY</div><button class="right" data-jog="X:1">Y + <span>→</span></button><button class="down" data-jog="Y:-1">X − <span>↓</span></button></div>
 <p class="hint">Modo por passos: clique uma vez e aguarde a chegada. Modo contínuo: mantenha o botão pressionado; soltar solicita STOP à ESP32-CAM. Sem sinal, o Arduino para sozinho. Os limites são lógicos e exigem HOME físico correto.</p>
 </article></div><article aria-label="Ensinar pontos olhando o vídeo ao vivo" class="card teach-camera-card">
 <div class="card-heading"><div><span class="card-kicker">REGISTRAR ENQUADRAMENTO</span><h2>Marcar a posição atual</h2></div><span class="tag">Usa as setas do controle</span></div>
@@ -151,14 +151,14 @@
 <button class="btn primary full" data-action="set-speed">Aplicar velocidade</button><p class="hint" id="speedHint">60 passos/s ≈ 2.00 mm/s em X/Y (estimativa conforme firmware).</p>
 <div class="divider"></div>
 <div class="card-heading tight"><div><h3>Referência dos eixos</h3></div></div>
-<div class="two-btn"><button class="btn secondary" data-action="home-x">⌖ HOME X</button><button class="btn secondary" data-action="home-y">⌖ HOME Y</button></div>
+<div class="two-btn"><button class="btn secondary" data-action="home-x">⌖ HOME Y</button><button class="btn secondary" data-action="home-y">⌖ HOME X</button></div>
 <div class="two-btn"><button class="btn secondary" data-action="unhome">Invalidar HOME</button><button class="btn secondary" data-action="disable">Liberar drivers</button></div>
 <div class="divider"></div>
 <h3>Definir posição lógica <span class="smaller">(sem mover)</span></h3>
-<div class="two-fields"><label class="field">X em passos<input id="setX" min="0" type="number" value="0"/></label><label class="field">Y em passos<input id="setY" min="0" type="number" value="0"/></label></div>
+<div class="two-fields"><label class="field">Y em passos<input id="setX" min="0" type="number" value="0"/></label><label class="field">X em passos<input id="setY" min="0" type="number" value="0"/></label></div>
 <button class="btn secondary full" data-action="setpos">Atualizar posição lógica</button>
-<button class="btn secondary full" data-action="goto-origin">Ir fisicamente a X0/Y0</button>
-<p class="hint warning">HOME, “Definir X0/Y0” e “Confirmar MAX físico” não movimentam. “Ir ao centro mecânico” e “Ir fisicamente a X0/Y0” movimentam os motores. Sem sensores, não existe detecção automática de origem.</p>
+<button class="btn secondary full" data-action="goto-origin">Ir fisicamente a Y0/X0</button>
+<p class="hint warning">HOME, “Definir Y0/X0” e “Confirmar MAX físico” não movimentam. “Ir ao centro mecânico” e “Ir fisicamente a Y0/X0” movimentam os motores. Sem sensores, não existe detecção automática de origem.</p>
 </article>
 </div>
 </section>
@@ -170,7 +170,7 @@
 <div>
 <p class="hint teach-intro">Escolha o tamanho do movimento, use X/Y para enquadrar as plantas e espere a parada. O ponto será gravado com as <strong>coordenadas atuais reportadas pelo Arduino (contagem de passos)</strong>.</p>
 <div class="teach-presets"><label for="teachDelta">Deslocar por clique</label><input id="teachDelta" max="5000" min="1" type="number" value="5"/><span>passos</span></div>
-<div class="jogpad teach-jog"><button class="up" data-jog="Y:1">Y + ↑</button><button class="left" data-jog="X:-1">← X −</button><div class="jog-center">X / Y</div><button class="right" data-jog="X:1">X + →</button><button class="down" data-jog="Y:-1">Y − ↓</button></div>
+<div class="jogpad teach-jog"><button class="up" data-jog="Y:1">X + ↑</button><button class="left" data-jog="X:-1">← Y −</button><div class="jog-center">X / Y</div><button class="right" data-jog="X:1">Y + →</button><button class="down" data-jog="Y:-1">X − ↓</button></div>
 <div aria-live="polite" class="teach-position" id="teachPosition">Posição: aguardando telemetria</div>
 </div>
 <div class="teach-mark">
@@ -189,15 +189,15 @@
 <p class="hint">Além do percurso ensinado, escolha um método automático. As coordenadas são os <strong>centros da câmera em passos</strong>; a cobertura X/Y deve ser medida com a câmera instalada. A prévia nunca envia comandos aos motores.</p>
 <div class="planner-form">
 <label>Método<select id="plannerMode"><option value="snakeRows">Zigue-zague por linhas (recomendado)</option><option value="snakeCols">Zigue-zague por colunas</option><option value="rows">Linhas em sentido único</option><option value="cols">Colunas em sentido único</option><option value="spiral">Espiral retangular</option><option value="perimeter">Perímetro — somente bordas</option></select></label>
-<label>Início X<input id="plannerX0" min="0" step="1" type="number" value="0"/></label>
-<label>Fim X<input id="plannerX1" min="0" step="1" type="number" value="1640"/></label>
-<label>Início Y<input id="plannerY0" min="0" step="1" type="number" value="0"/></label>
-<label>Fim Y<input id="plannerY1" min="0" step="1" type="number" value="4550"/></label>
-<label>Cobertura câmera em X (passos)<input id="plannerFootX" min="1" step="1" type="number" value="600"/></label>
-<label>Cobertura câmera em Y (passos)<input id="plannerFootY" min="1" step="1" type="number" value="1500"/></label>
+<label>Início Y<input id="plannerX0" min="0" step="1" type="number" value="0"/></label>
+<label>Fim Y<input id="plannerX1" min="0" step="1" type="number" value="1640"/></label>
+<label>Início X<input id="plannerY0" min="0" step="1" type="number" value="0"/></label>
+<label>Fim X<input id="plannerY1" min="0" step="1" type="number" value="4550"/></label>
+<label>Cobertura câmera em Y (passos)<input id="plannerFootX" min="1" step="1" type="number" value="600"/></label>
+<label>Cobertura câmera em X (passos)<input id="plannerFootY" min="1" step="1" type="number" value="1500"/></label>
 <label>Sobreposição (%)<input id="plannerOverlap" max="70" min="0" step="5" type="number" value="25"/></label>
 </div>
-<div class="planner-options"><label><input id="plannerFlipX" type="checkbox"/> Começar pelo lado X máximo</label><label><input id="plannerFlipY" type="checkbox"/> Começar pelo lado Y máximo</label></div>
+<div class="planner-options"><label><input id="plannerFlipX" type="checkbox"/> Começar pelo lado Y máximo</label><label><input id="plannerFlipY" type="checkbox"/> Começar pelo lado X máximo</label></div>
 <div class="planner-buttons"><button class="btn secondary" data-action="planner-preview">◎ Pré-visualizar pontos</button><button class="btn success" data-action="planner-apply" disabled="" id="plannerApply">＋ Usar roteiro gerado</button></div>
 <div aria-live="polite" class="planner-feedback" id="plannerFeedback" role="status">Preencha os limites reais e a cobertura da câmera. Valores pré-preenchidos de cobertura são apenas exemplos e não foram calibrados.</div>
 <canvas aria-label="Pré-visualização do roteiro gerado sem movimento físico" height="260" id="plannerCanvas"></canvas>
@@ -205,8 +205,8 @@
 </div></article>
 <div class="section-grid route-layout">
 <article class="card"><div class="card-heading"><div><span class="card-kicker">PONTOS DE PARADA</span><h2>Lista programada <span class="tag" hidden="" id="routeDirty">Alterações não salvas</span></h2></div><span class="tag" id="routeBadge">0 / 48 pontos</span></div>
-<details class="teach-advanced"><summary>Inserir coordenadas manualmente (opcional)</summary><div class="route-create"><div class="field-inline"><label>X<input id="pointX" min="0" type="number" value="0"/></label><label>Y<input id="pointY" min="0" type="number" value="0"/></label><label class="checkbox-inline"><input checked="" id="pointPhoto" type="checkbox"/> Foto</label><button class="btn secondary" data-action="add-point">＋ Adicionar coordenada</button></div></div></details>
-<div class="table-wrap"><table><thead><tr><th>#</th><th>X (passos)</th><th>Y (passos)</th><th>Fotografar</th><th>Ordem</th><th></th></tr></thead><tbody id="routeRows"></tbody></table><div class="empty-state" id="emptyRoute">Nenhum ponto cadastrado. Abra Controle, ajuste o enquadramento e marque a posição atual.</div></div>
+<details class="teach-advanced"><summary>Inserir coordenadas manualmente (opcional)</summary><div class="route-create"><div class="field-inline"><label>Y<input id="pointX" min="0" type="number" value="0"/></label><label>X<input id="pointY" min="0" type="number" value="0"/></label><label class="checkbox-inline"><input checked="" id="pointPhoto" type="checkbox"/> Foto</label><button class="btn secondary" data-action="add-point">＋ Adicionar coordenada</button></div></div></details>
+<div class="table-wrap"><table><thead><tr><th>#</th><th>Y (passos)</th><th>X (passos)</th><th>Fotografar</th><th>Ordem</th><th></th></tr></thead><tbody id="routeRows"></tbody></table><div class="empty-state" id="emptyRoute">Nenhum ponto cadastrado. Abra Controle, ajuste o enquadramento e marque a posição atual.</div></div>
 <div class="route-buttons"><button class="btn primary" data-action="save-route">☑ Salvar na ESP32-CAM</button><button class="btn secondary" data-action="load-route">↻ Recarregar da ESP32</button><button class="btn secondary" data-action="export-route">↓ Exportar CSV</button><button class="btn secondary" data-action="import-route">↑ Importar CSV</button><input accept=".csv,.txt,text/csv,text/plain" hidden="" id="routeFile" type="file"/></div>
 </article>
 <div class="side-stack"><article class="card"><div class="card-heading"><div><span class="card-kicker">EXECUÇÃO AUTÔNOMA</span><h2>Controle do roteiro</h2></div></div><div class="big-count"><span id="routeProgress">0 / 0</span> pontos percorridos</div><div class="progress"><span id="routeProgressBar"></span></div><div class="route-actions"><button class="btn success full" data-action="start">▶ Iniciar percurso</button></div><p class="hint">A ESP32-CAM coordena os movimentos e somente avança depois de receber a confirmação de gravação da foto no notebook.</p></article>
@@ -225,10 +225,10 @@
 <div class="card-heading"><div><span class="card-kicker">MOSAICO X/Y + ENCAIXE FINO</span><h2>Imagem geral da plantação</h2></div><span class="tag">JPEGs preservados</span></div><p class="hint simple-only">Ao terminar o roteiro, as fotos originais ficam salvas. Você pode gerar a imagem geral abaixo, sem apagar nenhuma fotografia.</p>
 <p class="hint">Monte uma única imagem com as fotos salvas e as posições X/Y registradas. A montagem é aproximada: primeiro calibre quantos <strong>passos de X/Y uma fotografia cobre</strong>. Não substitui os JPEGs originais nem movimenta a máquina.</p>
 <div class="mosaic-settings advanced-only">
-<label class="field">Cobertura X (passos por foto)<input id="mosaicFootX" max="50000" min="1" step="1" type="number" value="600"/></label>
-<label class="field">Cobertura Y (passos por foto)<input id="mosaicFootY" max="50000" min="1" step="1" type="number" value="1500"/></label>
+<label class="field">Cobertura Y (passos por foto)<input id="mosaicFootX" max="50000" min="1" step="1" type="number" value="600"/></label>
+<label class="field">Cobertura X (passos por foto)<input id="mosaicFootY" max="50000" min="1" step="1" type="number" value="1500"/></label>
 <label class="field">Orientação da imagem<select id="mosaicRotate"><option value="0">Normal (0°)</option><option value="90">90° anti-horário</option><option value="180">180°</option><option value="270">90° horário</option></select></label>
-<div class="mosaic-checks"><label><input id="mosaicFlipX" type="checkbox"/> Espelhar foto em X</label><label><input id="mosaicFlipY" type="checkbox"/> Espelhar foto em Y</label><label><input checked="" id="mosaicAutomatic" type="checkbox"/> Gerar automaticamente ao concluir roteiro</label><label><input checked="" id="mosaicFine" type="checkbox"/> Encaixe fino por pontos em comum (recomendado com sobreposição)</label></div>
+<div class="mosaic-checks"><label><input id="mosaicFlipX" type="checkbox"/> Espelhar foto em Y</label><label><input id="mosaicFlipY" type="checkbox"/> Espelhar foto em X</label><label><input checked="" id="mosaicAutomatic" type="checkbox"/> Gerar automaticamente ao concluir roteiro</label><label><input checked="" id="mosaicFine" type="checkbox"/> Encaixe fino por pontos em comum (recomendado com sobreposição)</label></div>
 </div>
 <div class="mosaic-actions"><button class="btn secondary advanced-only" data-action="mosaic-save">Salvar calibração</button><label class="field advanced-only">Fotografias usadas<select id="mosaicSource"><option value="sessao">Última execução do percurso</option><option value="recentes">Últimas 48 posições com fotos</option></select></label><button class="btn success" data-action="mosaic-generate" id="mosaicGenerate">▣ Gerar mosaico agora</button><button class="btn secondary advanced-only" data-action="mosaic-refresh">↻ Atualizar</button></div>
 <p aria-live="polite" class="hint" id="mosaicFeedback" role="status">Aguardando consulta ao notebook. Os valores de cobertura são exemplos, não estão calibrados.</p>
