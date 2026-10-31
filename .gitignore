@@ -1,0 +1,19 @@
+# Python: ambientes e arquivos gerados
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Configuração e calibração locais (podem conter credenciais/posições específicas)
+notebook/atlas_conexao.json
+notebook/geometria_maquete.json
+
+# Arquivos temporários e saídas geradas
+*.part
+*.tmp
+.DS_Store
+notebook/capturas/mosaicos/mosaico_*.jpg
+notebook/capturas/mosaicos/mosaico_*.jpg.json
