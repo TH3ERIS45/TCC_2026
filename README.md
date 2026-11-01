@@ -1,4 +1,4 @@
-# ATLAS CNC — projeto do TCC (v4.7)
+# TCC
 
 Painel local para operar a maquete CNC, acompanhar a ESP32-CAM e receber as fotografias do percurso. O notebook faz a interface e o armazenamento; o controle de movimento e a sequência de captura continuam distribuídos entre os dois microcontroladores.
 
